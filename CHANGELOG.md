@@ -5,6 +5,31 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.0] - 2025-08-27
+
+### 🔐 Ajouté
+- **Système de whitelist dynamique** : Vérification via GitHub Gist JSON
+- **Téléchargement automatique** : Mise à jour périodique configurable (TTL)
+- **Configuration flexible** : JSON avec usernames, messages personnalisés
+- **Gestion asynchrone** : Vérifications non-bloquantes pour le jeu
+- **Messages personnalisables** : Textes d'erreur configurables dans le JSON
+
+### 🗑️ Supprimé
+- **Système de guilde** : Suppression complète de GuildVerifier
+- **Messages /t info** : Plus de commandes automatiques en jeu
+- **Dépendances guilde** : Architecture simplifiée
+
+### 🔧 Amélioré
+- **Performance** : Vérifications plus rapides et efficaces
+- **Sécurité** : Contrôle centralisé des accès
+- **Maintenance** : Mise à jour des utilisateurs sans redéploiement
+- **Interface** : Messages d'erreur plus clairs et informatifs
+
+### 🎯 Impact
+- **Pour les utilisateurs** : Accès plus fluide, moins d'attente
+- **Pour l'admin** : Gestion simple via GitHub Gist
+- **Pour le développement** : Code plus maintenable et extensible
+
 ## [1.2.0] - 2025-08-27
 
 ### 🌅 Ajouté

@@ -1,7 +1,6 @@
 package com.aureltimer.mixin;
 
 import com.aureltimer.AurelTimerMod;
-import com.aureltimer.handlers.GuildVerifier;
 import com.aureltimer.handlers.HomeTracker;
 import com.aureltimer.config.ModConfig;
 import net.minecraft.client.MinecraftClient;
@@ -26,7 +25,6 @@ public class DimensionDetectionMixin {
     
     private static final Logger LOGGER = LoggerFactory.getLogger("DimensionDetectionMixin");
     private final HomeTracker homeTracker = new HomeTracker();
-    private final GuildVerifier guildVerifier = GuildVerifier.getInstance();
     
     // Pattern pour extraire le temps des messages de spawn légendaire
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)\\s+minutes?\\s+et\\s+(\\d+)\\s+secondes?");
@@ -37,22 +35,9 @@ public class DimensionDetectionMixin {
             Text messageText = packet.content();
             String message = messageText.getString();
             
-            // Vérifier d'abord si l'utilisateur est autorisé
-            if (!guildVerifier.isVerified()) {
-                // Si pas encore vérifié, traiter les messages de vérification
-                if (message.contains("Your data has been loaded successfully")) {
-                    guildVerifier.processDataLoadedMessage();
-                    return;
-                }
-                
-                if (message.contains("Overview of ") || 
-                    message.contains("You are not in a town") ||
-                    message.contains("Vous n'êtes pas dans une ville")) {
-                    guildVerifier.processTownInfoResponse(message);
-                    return;
-                }
-                
-                // Si pas vérifié, ignorer tous les autres messages
+            // Vérifier si l'utilisateur est autorisé via la whitelist
+            if (AurelTimerMod.getWhitelistManager() != null && !AurelTimerMod.getWhitelistManager().isVerified()) {
+                // Si pas encore vérifié ou non autorisé, ignorer les messages
                 return;
             }
             

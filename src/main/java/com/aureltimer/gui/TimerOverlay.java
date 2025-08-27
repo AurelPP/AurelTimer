@@ -1,7 +1,7 @@
 package com.aureltimer.gui;
 
-import com.aureltimer.handlers.GuildVerifier;
 import com.aureltimer.managers.TimerManager;
+import com.aureltimer.managers.WhitelistManager;
 import com.aureltimer.models.DimensionTimer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -22,7 +22,7 @@ public class TimerOverlay {
     
     private static final Logger LOGGER = LoggerFactory.getLogger("TimerOverlay");
     private final TimerManager timerManager;
-    private final GuildVerifier guildVerifier;
+    private final WhitelistManager whitelistManager;
     private boolean isVisible = false;
     
     // Couleurs et style
@@ -34,21 +34,21 @@ public class TimerOverlay {
     private static final int EXPIRED_COLOR = 0xFFFF4444; // Rouge
     private static final int ERROR_COLOR = 0xFFFF5555; // Rouge d'erreur
     
-    public TimerOverlay(TimerManager timerManager) {
+    public TimerOverlay(TimerManager timerManager, WhitelistManager whitelistManager) {
         this.timerManager = timerManager;
-        this.guildVerifier = GuildVerifier.getInstance();
+        this.whitelistManager = whitelistManager;
     }
     
     public void toggleVisibility() {
         // Vérifier l'autorisation avant d'afficher
-        if (!guildVerifier.isVerified()) {
-            if (!guildVerifier.hasChecked()) {
+        if (!whitelistManager.isVerified()) {
+            if (!whitelistManager.hasChecked()) {
                 // En cours de vérification
-                sendChatMessage("§e§lAurel Timer : §eVérification de guilde en cours...");
+                sendChatMessage("§e§lAurel Timer : §eVérification en cours...");
                 return;
             } else {
                 // Vérification échouée
-                sendChatMessage("§c§lAurel Timer : §cAccès refusé - Guilde non autorisée");
+                sendChatMessage("§c§lAurel Timer : §c" + whitelistManager.getUnauthorizedMessage());
                 return;
             }
         }
@@ -69,7 +69,7 @@ public class TimerOverlay {
         if (!isVisible) return;
         
         // Vérifier l'autorisation avant de rendre
-        if (!guildVerifier.isVerified()) {
+        if (!whitelistManager.isVerified()) {
             return;
         }
         

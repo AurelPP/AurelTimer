@@ -1,7 +1,7 @@
 package com.aureltimer.gui;
 
 import com.aureltimer.config.ModConfig;
-import com.aureltimer.handlers.GuildVerifier;
+import com.aureltimer.AurelTimerMod;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -17,7 +17,6 @@ public class ConfigScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger("ConfigScreen");
     private final Screen parent;
     private final ModConfig config;
-    private final GuildVerifier guildVerifier;
     
     private ButtonWidget alertDisplayButton;
     private ButtonWidget soundEnabledButton;
@@ -27,7 +26,6 @@ public class ConfigScreen extends Screen {
         super(Text.literal("Configuration Aurel Timer"));
         this.parent = parent;
         this.config = ModConfig.getInstance();
-        this.guildVerifier = GuildVerifier.getInstance();
     }
     
     @Override
@@ -35,18 +33,19 @@ public class ConfigScreen extends Screen {
         super.init();
         
         // Vérifier l'autorisation avant d'afficher l'interface
-        if (!guildVerifier.isVerified()) {
-            if (!guildVerifier.hasChecked()) {
+        if (AurelTimerMod.getWhitelistManager() != null && !AurelTimerMod.getWhitelistManager().isVerified()) {
+            if (!AurelTimerMod.getWhitelistManager().hasChecked()) {
                 // En cours de vérification
                 this.addDrawableChild(ButtonWidget.builder(
-                    Text.literal("Vérification de guilde en cours..."), 
+                    Text.literal("Vérification en cours..."), 
                     (button) -> {}).dimensions(this.width / 2 - 100, this.height / 2, 200, 20).build());
                 return;
             } else {
                 // Vérification échouée
+                String message = AurelTimerMod.getWhitelistManager().getUnauthorizedMessage();
                 this.addDrawableChild(ButtonWidget.builder(
-                    Text.literal("Accès refusé - Guilde non autorisée"), 
-                    (button) -> {}).dimensions(this.width / 2 - 100, this.height / 2, 200, 20).build());
+                    Text.literal(message), 
+                    (button) -> {}).dimensions(this.width / 2 - 150, this.height / 2, 300, 20).build());
                 
                 this.addDrawableChild(ButtonWidget.builder(
                     Text.literal("Retour"), 
@@ -124,20 +123,21 @@ public class ConfigScreen extends Screen {
         context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
         
         // Vérifier l'autorisation avant d'afficher le contenu
-        if (!guildVerifier.isVerified()) {
-            if (!guildVerifier.hasChecked()) {
+        if (AurelTimerMod.getWhitelistManager() != null && !AurelTimerMod.getWhitelistManager().isVerified()) {
+            if (!AurelTimerMod.getWhitelistManager().hasChecked()) {
                 context.drawCenteredTextWithShadow(this.textRenderer, 
-                    Text.literal("Vérification de guilde en cours..."), 
+                    Text.literal("Vérification en cours..."), 
                     this.width / 2, this.height / 2 - 20, 0xFFFFAA);
                 context.drawCenteredTextWithShadow(this.textRenderer, 
                     Text.literal("Veuillez patienter..."), 
                     this.width / 2, this.height / 2 + 10, 0xAAAAAA);
             } else {
+                String message = AurelTimerMod.getWhitelistManager().getUnauthorizedMessage();
                 context.drawCenteredTextWithShadow(this.textRenderer, 
                     Text.literal("Accès refusé"), 
                     this.width / 2, this.height / 2 - 20, 0xFF5555);
                 context.drawCenteredTextWithShadow(this.textRenderer, 
-                    Text.literal("Vous devez appartenir à la guilde Aether"), 
+                    Text.literal(message), 
                     this.width / 2, this.height / 2 + 10, 0xAAAAAA);
             }
         } else {

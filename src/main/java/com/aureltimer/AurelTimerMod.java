@@ -5,6 +5,7 @@ import com.aureltimer.gui.ConfigScreen;
 import com.aureltimer.gui.TimerOverlay;
 import com.aureltimer.handlers.ChatHandler;
 import com.aureltimer.managers.TimerManager;
+import com.aureltimer.managers.WhitelistManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -24,6 +25,7 @@ public class AurelTimerMod implements ClientModInitializer {
     private static KeyBinding openConfigKey;
     private static TimerManager timerManager;
     private static TimerOverlay timerOverlay;
+    private static WhitelistManager whitelistManager;
 
     @Override
     public void onInitializeClient() {
@@ -32,9 +34,13 @@ public class AurelTimerMod implements ClientModInitializer {
         // Initialiser la configuration
         ModConfig.getInstance();
 
+        // Initialiser le système de whitelist
+        whitelistManager = new WhitelistManager();
+        whitelistManager.initialize();
+
         // Initialiser les composants
         timerManager = new TimerManager();
-        timerOverlay = new TimerOverlay(timerManager);
+        timerOverlay = new TimerOverlay(timerManager, whitelistManager);
 
         // Configurer le ChatHandler avec le TimerManager
         ChatHandler.setTimerManager(timerManager);
@@ -84,5 +90,9 @@ public class AurelTimerMod implements ClientModInitializer {
 
     public static TimerManager getTimerManager() {
         return timerManager;
+    }
+
+    public static WhitelistManager getWhitelistManager() {
+        return whitelistManager;
     }
 }
