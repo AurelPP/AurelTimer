@@ -57,15 +57,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## 🔮 Versions futures
 
-### [1.2.0] - Planifié
-- **Notifications avancées** : Options de notification personnalisables
-- **Statistiques** : Historique des timers et statistiques d'utilisation
-- **Export/Import** : Sauvegarde et partage des configurations
-
-### [1.3.0] - Planifié
-- **Support multi-serveurs** : Configuration par serveur
-- **API publique** : Interface pour d'autres mods
-- **Thèmes visuels** : Personnalisation de l'apparence
+### [1.2.0] - Non Planifié
 
 ---
 
