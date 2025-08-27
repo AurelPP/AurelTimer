@@ -1,5 +1,6 @@
 package com.aureltimer.models;
 
+import com.aureltimer.utils.TimeUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -9,6 +10,7 @@ public class DimensionTimer {
     private final int initialSeconds;
     private final LocalDateTime spawnTime;
     private final LocalDateTime createdAt;
+    private final TimeUtils.DayPhase predictedPhase;
     
     public DimensionTimer(String dimensionName, int minutes, int seconds, LocalDateTime spawnTime) {
         this.dimensionName = dimensionName;
@@ -16,10 +18,27 @@ public class DimensionTimer {
         this.initialSeconds = seconds;
         this.spawnTime = spawnTime;
         this.createdAt = LocalDateTime.now();
+        // Prédire la phase du jour au moment du spawn
+        this.predictedPhase = TimeUtils.predictSpawnPhase(minutes, seconds);
     }
     
     public String getDimensionName() {
         return dimensionName;
+    }
+    
+    /**
+     * Récupère la phase prédite du jour au moment du spawn
+     */
+    public TimeUtils.DayPhase getPredictedPhase() {
+        return predictedPhase;
+    }
+    
+    /**
+     * Récupère le nom de la dimension avec la phase prédite
+     * Format: "Ressource2 - Midi (6h-12h)"
+     */
+    public String getDimensionNameWithPhase() {
+        return dimensionName + " - " + TimeUtils.formatPhase(predictedPhase);
     }
     
     public int getInitialMinutes() {

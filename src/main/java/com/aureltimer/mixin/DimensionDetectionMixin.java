@@ -75,7 +75,6 @@ public class DimensionDetectionMixin {
                 }
                 
                 homeTracker.setLastHome(dimensionName);
-                LOGGER.info("🌍 DIMENSION DÉTECTÉE: '{}'", dimensionName);
             }
         }
         

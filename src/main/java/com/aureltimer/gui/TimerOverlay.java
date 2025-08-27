@@ -147,8 +147,8 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return;
         
-        // Nom de la dimension
-        Text dimensionText = Text.literal("🌍 " + timer.getDimensionName());
+        // Nom de la dimension avec phase prédite
+        Text dimensionText = Text.literal("🌍 " + timer.getDimensionNameWithPhase());
         context.drawText(client.textRenderer, dimensionText, x, y, TITLE_COLOR, true);
         
         // Timer

@@ -16,14 +16,23 @@ public class HomeTracker {
      */
     public static void setLastHome(String dimensionName) {
         if (dimensionName != null && !dimensionName.trim().isEmpty()) {
-            // Vérifier que ce n'est pas un timer qui a été confondu avec une dimension
-            if (dimensionName.contains("minutes") || dimensionName.contains("secondes") || 
-                dimensionName.contains("et") || dimensionName.matches("\\d+\\s+(minutes?|secondes?).*")) {
-                LOGGER.error("❌ ERREUR: Tentative de définir un timer '{}' comme nom de dimension!", dimensionName);
+            String cleanName = dimensionName.trim();
+            
+            // Dimensions vanilla toujours autorisées
+            if ("Nether".equals(cleanName) || "End".equals(cleanName) || "Overworld".equals(cleanName)) {
+                lastHomeName = cleanName;
+                LOGGER.info("🌍 DIMENSION ACTUELLE: '{}'", lastHomeName);
                 return;
             }
             
-            lastHomeName = dimensionName.trim();
+            // Vérifier que ce n'est pas un timer qui a été confondu avec une dimension
+            if (cleanName.contains("minutes") || cleanName.contains("secondes") || 
+                cleanName.contains("et") || cleanName.matches("\\d+\\s+(minutes?|secondes?).*")) {
+                LOGGER.error("❌ ERREUR: Tentative de définir un timer '{}' comme nom de dimension!", cleanName);
+                return;
+            }
+            
+            lastHomeName = cleanName;
             LOGGER.info("🌍 DIMENSION ACTUELLE: '{}'", lastHomeName);
         }
     }

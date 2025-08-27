@@ -5,6 +5,23 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2025-08-27
+
+### 🌅 Ajouté
+- **Prédiction de phase du jour** : Affichage de la phase Minecraft au moment du spawn légendaire
+- **8 phases détaillées** : Dawn (Aube), Morning (Matin), Noon (Midi), Afternoon (Après-midi), Day (Jour), Dusk (Crépuscule), Night (Nuit), Midnight (Minuit)
+- **Affichage enrichi** : Format "🌍 Dimension - Phase (heures)" dans l'interface
+- **Calculs précis** : Conversion temps réel vers temps Minecraft avec gestion des cycles 24h
+
+### 🔧 Corrigé
+- **Logique des phases** : Correction des chevauchements entre phases nocturnes
+- **Phases traversant minuit** : Gestion correcte de Dawn, Night et Midnight
+- **Priorité des phases** : Les phases spécifiques (Midi, Crépuscule) sont prioritaires sur les générales
+
+### 🎯 Exemple
+- Avant : `🌍 Ressource2               21m 44s`
+- Après : `🌍 Ressource2 - Midi (11:00-12:59)     21m 44s`
+
 ## [1.1.0] - 2025-03-18
 
 ### 🔐 Ajouté
