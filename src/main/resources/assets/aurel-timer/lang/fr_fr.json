@@ -1,0 +1,14 @@
+{
+  "key.aureltimer.toggleoverlay": "Ouvrir l'interface des timers",
+  "key.aureltimer.openconfig": "Ouvrir la configuration",
+  "category.aureltimer.general": "Aurel Timer",
+  "aureltimer.config.title": "Configuration Aurel Timer",
+  "aureltimer.config.alert_display": "Affichage du rappel",
+  "aureltimer.config.sound_enabled": "Son du rappel",
+  "aureltimer.config.done": "Terminé",
+  "aureltimer.config.alert_display.chat": "Chat",
+  "aureltimer.config.alert_display.title": "Titre",
+  "aureltimer.config.alert_display.none": "Non",
+  "aureltimer.config.sound.yes": "Oui",
+  "aureltimer.config.sound.no": "Non"
+}
