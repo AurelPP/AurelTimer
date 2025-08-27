@@ -65,8 +65,8 @@ public class DimensionDetectionMixin {
     }
     
     private void processMessage(String message) {
-        // Détection des messages HUD pour la dimension
-        if (message.contains("PGHUD") || message.contains("&f裁") || message.contains(":")) {
+        // Détection des messages HUD pour la dimension - SEULEMENT les vrais messages HUD
+        if (message.contains("PGHUD") || message.contains("&f裁")) {
             String dimensionName = extractDimensionFromHudMessage(message);
             if (dimensionName != null) {
                 // Gestion spéciale pour "Dimensions" (Nether/End)
@@ -93,34 +93,26 @@ public class DimensionDetectionMixin {
                 String[] parts = hudMessage.split("&f裁");
                 if (parts.length > 1) {
                     String dimensionPart = parts[1].trim();
+                    
                     // Nettoyer les codes de couleur et extraire le nom
-                    String cleanDimension = dimensionPart.replaceAll("§[0-9a-fk-or]", "").trim();
+                    String cleanDimension = dimensionPart.replaceAll("§[0-9a-fk-or]", "").replaceAll("&[0-9a-fk-or]", "").trim();
+                    
                     if (cleanDimension.contains(":")) {
                         cleanDimension = cleanDimension.split(":")[0].trim();
                     }
-                    if (!cleanDimension.isEmpty()) {
+                    if (!cleanDimension.isEmpty() && !cleanDimension.contains("minutes") && !cleanDimension.contains("secondes")) {
                         return cleanDimension;
                     }
                 }
             }
             
-            // Fallback: chercher après le dernier ":" si pas de pattern spécifique
-            if (hudMessage.contains(":")) {
-                String[] parts = hudMessage.split(":");
-                if (parts.length > 0) {
-                    String lastPart = parts[parts.length - 1].trim();
-                    // Nettoyer les codes de couleur
-                    String cleanPart = lastPart.replaceAll("§[0-9a-fk-or]", "").trim();
-                    if (!cleanPart.isEmpty() && !cleanPart.equals("{}")) {
-                        return cleanPart;
-                    }
-                }
-            }
+            // Pas de fallback générique pour éviter de capturer les messages de chat
             
         } catch (Exception e) {
             LOGGER.warn("❌ Impossible d'extraire le nom de dimension du message HUD: {}", hudMessage);
         }
         
+        LOGGER.warn("⚠️ Aucune dimension valide trouvée dans: '{}'", hudMessage);
         return null;
     }
     
@@ -144,12 +136,20 @@ public class DimensionDetectionMixin {
             String timeString = extractTimeFromMessage(message);
             if (timeString != null) {
                 String dimensionName = homeTracker.getLastHome();
-                if (dimensionName != null) {
-                    AurelTimerMod.getTimerManager().updateTimer(dimensionName, timeString);
-                    LOGGER.info("⏰ Timer créé pour {}: {}", dimensionName, timeString);
-                    
-                    // Programmer l'alerte à 1 minute
-                    scheduleAlertCheck(dimensionName, timeString);
+                
+                if (dimensionName != null && !dimensionName.trim().isEmpty()) {
+                    // Vérifier que la dimension n'est pas le timeString lui-même
+                    if (!dimensionName.equals(timeString) && !dimensionName.contains("minutes") && !dimensionName.contains("secondes")) {
+                        AurelTimerMod.getTimerManager().updateTimer(dimensionName, timeString);
+                        LOGGER.info("⏰ Timer créé pour {}: {}", dimensionName, timeString);
+                        
+                        // Programmer l'alerte à 1 minute
+                        scheduleAlertCheck(dimensionName, timeString);
+                    } else {
+                        LOGGER.error("❌ ERREUR: La dimension détectée '{}' semble être un timer au lieu d'un nom de dimension!", dimensionName);
+                    }
+                } else {
+                    LOGGER.warn("⚠️ Aucune dimension détectée pour le timer: {}", timeString);
                 }
             }
         } catch (Exception e) {

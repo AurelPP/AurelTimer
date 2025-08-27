@@ -16,7 +16,15 @@ public class HomeTracker {
      */
     public static void setLastHome(String dimensionName) {
         if (dimensionName != null && !dimensionName.trim().isEmpty()) {
+            // Vérifier que ce n'est pas un timer qui a été confondu avec une dimension
+            if (dimensionName.contains("minutes") || dimensionName.contains("secondes") || 
+                dimensionName.contains("et") || dimensionName.matches("\\d+\\s+(minutes?|secondes?).*")) {
+                LOGGER.error("❌ ERREUR: Tentative de définir un timer '{}' comme nom de dimension!", dimensionName);
+                return;
+            }
+            
             lastHomeName = dimensionName.trim();
+            LOGGER.info("🌍 DIMENSION ACTUELLE: '{}'", lastHomeName);
         }
     }
 
