@@ -48,6 +48,10 @@ logs/
 *.log
 *.log.gz
 
+# Releases - Ne pas versionner les fichiers JAR de release
+releases/
+*.jar
+
 # Temporary files
 *.tmp
 *.temp
