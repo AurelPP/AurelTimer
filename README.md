@@ -45,9 +45,10 @@ Tous les changements s'appliquent immédiatement sans redémarrage !
 ### Étapes
 1. Télécharge la dernière version depuis [Releases](../../releases)
 2. Place le fichier `.jar` dans ton dossier `mods/`
-3. **Pour la synchronisation** : Configure ton token GitHub dans `TimerSyncManager.java` (ligne 33)
-4. Lance Minecraft avec Fabric
-5. Appuie sur **L** en jeu pour tester !
+3. Lance Minecraft avec Fabric
+4. Appuie sur **L** en jeu pour tester !
+
+**🌐 La synchronisation est automatique et fonctionne immédiatement !**
 
 ## 🌟 Avantages
 
