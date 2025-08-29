@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "aurel-timer",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "name": "⏰ Aurel Timer",
   "description": "Mod de synchronisation des timers légendaires avec interface déplaçable, alertes intelligentes et partage multi-joueurs",
   "authors": [

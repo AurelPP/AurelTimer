@@ -252,6 +252,11 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return false;
         
+        // Ne pas autoriser le drag & drop si un menu Minecraft est ouvert (sauf le chat)
+        if (client.currentScreen != null && !isChatScreen(client.currentScreen)) {
+            return false;
+        }
+        
         int screenWidth = client.getWindow().getScaledWidth();
         int screenHeight = client.getWindow().getScaledHeight();
         int overlayWidth = 300;
@@ -294,6 +299,12 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return false;
         
+        // Arrêter le dragging si un menu Minecraft s'ouvre pendant (sauf le chat)
+        if (client.currentScreen != null && !isChatScreen(client.currentScreen)) {
+            isDragging = false;
+            return false;
+        }
+        
         int screenWidth = client.getWindow().getScaledWidth();
         int screenHeight = client.getWindow().getScaledHeight();
         int overlayWidth = 300;
@@ -329,6 +340,24 @@ public class TimerOverlay {
         
         // Fallback si on ne trouve pas la hotkey
         return "L";
+    }
+    
+    /**
+     * Vérifie si l'écran ouvert est le chat
+     */
+    private boolean isChatScreen(Screen screen) {
+        if (screen == null) return false;
+        
+        String className = screen.getClass().getSimpleName();
+        String fullClassName = screen.getClass().getName();
+        
+        // Vérifier plusieurs variantes possibles du chat
+        return className.equals("ChatScreen") || 
+               className.contains("Chat") ||
+               fullClassName.contains("chat") ||
+               fullClassName.contains("Chat") ||
+               // Nom obfusqué spécifique du chat en Fabric 1.21.1
+               className.equals("class_408");
     }
     
     /**

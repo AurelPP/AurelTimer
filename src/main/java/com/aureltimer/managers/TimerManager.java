@@ -29,6 +29,16 @@ public class TimerManager {
         DimensionTimer timer = new DimensionTimer(dimensionName, minutes, seconds, spawnTime);
         dimensionTimers.put(dimensionName, timer);
         
+        // Forcer le refresh immédiat du cache de l'overlay pour éviter le retard d'affichage
+        try {
+            com.aureltimer.gui.TimerOverlay overlay = com.aureltimer.AurelTimerMod.getTimerOverlay();
+            if (overlay != null) {
+                overlay.refreshCache();
+            }
+        } catch (Exception e) {
+            // Ignorer silencieusement si pas trouvé
+        }
+        
         // Synchroniser avec les autres utilisateurs si activé
         if (syncManager.isSyncEnabled() && syncManager.isAuthorized()) {
             syncManager.createOrUpdateTimer(dimensionName, minutes, seconds)

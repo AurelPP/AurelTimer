@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.1] - 2025-08-30
+
+### 🔧 Corrigé
+- **Fix alertes timers JSON** : Les timers récupérés du serveur déclenchent maintenant les alertes à 1 minute
+- **Fix affichage instantané** : Les nouveaux timers apparaissent immédiatement dans l'interface (plus de retard debounce)
+- **Fix drag & drop interface** : L'interface n'interfère plus avec les menus Minecraft
+- **Support chat ouvert** : Possibilité de déplacer l'interface quand le chat est ouvert
+- **Fix crash Mixin** : Correction de l'erreur "non-private static method" au démarrage
+
+### 🎨 Amélioré
+- **Optimisation cache** : Refresh automatique du cache overlay pour un affichage réactif
+- **Logique drag & drop** : Détection intelligente des écrans compatibles avec le déplacement
+- **Architecture code** : Séparation des responsabilités avec classe utilitaire AlertUtils
+
 ## [1.4.0] - 2025-08-27
 
 ### 🌐 Ajouté

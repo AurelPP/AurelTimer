@@ -212,28 +212,6 @@ public class DimensionDetectionMixin {
     }
     
     private void showSpawnAlert(String dimensionName) {
-        try {
-            ModConfig config = ModConfig.getInstance();
-            
-            // Jouer le son si activé
-            if (config.shouldPlaySound()) {
-                MinecraftClient client = MinecraftClient.getInstance();
-                if (client != null && client.player != null) {
-                    client.player.playSound(net.minecraft.sound.SoundEvents.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
-                }
-            }
-            
-            // Afficher le message si activé
-            if (config.shouldShowAlert() && config.shouldShowInChat()) {
-                MinecraftClient client = MinecraftClient.getInstance();
-                if (client != null && client.player != null) {
-                    String alertMessage = "§6§l⚠ SPAWN DE LÉGENDAIRE DANS 1 MINUTE EN " + dimensionName + " ⚠";
-                    client.player.sendMessage(Text.literal(alertMessage));
-                }
-            }
-            
-        } catch (Exception e) {
-            LOGGER.error("Erreur lors de l'affichage de l'alerte: {}", e.getMessage());
-        }
+        com.aureltimer.utils.AlertUtils.showSpawnAlert(dimensionName);
     }
 }

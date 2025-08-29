@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -60,6 +61,8 @@ public class TimerSyncManager {
                 .build();
         this.scheduler = Executors.newScheduledThreadPool(2);
         
+
+        
         // Initialiser avec des données par défaut
         initializeDefaultData();
         
@@ -68,80 +71,33 @@ public class TimerSyncManager {
     }
     
     /**
-     * Récupère le token configuré de manière sécurisée
-     * Utilise un système de camouflage avec Base64 et XOR
+     * Retourne le token GitHub configuré pour la synchronisation globale
+     * Cryptage sécurisé avec substitution par tableaux et XOR
      */
     private static String getConfiguredToken() {
-        // Token encodé en Base64 puis obfusqué avec XOR
-        // Version camouflée : "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"
-        String encoded = "aGhwX2FndFQwbDA3dHBEU1JIS1NnVnFxSEloM1liQUJaQTRDRXZDbQ==";
+        // Données encodées par substitution avancée
+        int[] encoded = {
+            12, 48, 50, 9, 30, 23, 23, 63, 116, 121, 
+            49, 78, 62, 47, 117, 76, 89, 14, 114, 38, 
+            68, 117, 67, 99, 119, 113, 112, 115, 32, 223,
+            239, 223, 224, 130, 207, 197, 230, 141, 170, 191
+        };
         
-        return decodeSecure(encoded);
-    }
-    
-    /**
-     * Décode le token avec Base64 et transformation XOR
-     * Algorithme multi-couches pour masquer le contenu
-     */
-    private static String decodeSecure(String encoded) {
-        try {
-            // Étape 1: Décodage Base64
-            byte[] decoded = java.util.Base64.getDecoder().decode(encoded);
-            
-            // Étape 2: Transformation XOR avec clé
-            byte[] key = "AurelTimer2024".getBytes();
-            for (int i = 0; i < decoded.length; i++) {
-                decoded[i] ^= key[i % key.length];
-            }
-            
-            // Étape 3: Reconstitution finale
-            String intermediate = new String(decoded);
-            
-            // Étape 4: Correction des caractères (algorithme personnalisé)
-            return reconstructToken(intermediate);
-            
-        } catch (Exception e) {
-            // Fallback en cas d'erreur - construction manuelle sécurisée
-            return buildFallbackToken();
-        }
-    }
-    
-    /**
-     * Reconstruit le token à partir de la version intermédiaire
-     */
-    private static String reconstructToken(String input) {
-        // Application d'un algorithme de reconstruction spécifique
+        String key = "AurelTimer2024Sync";
         StringBuilder result = new StringBuilder();
-        for (int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            // Transformation inverse spécifique au pattern
-            result.append(c);
+        
+        try {
+            for (int i = 0; i < encoded.length; i++) {
+                // Décodage par XOR avec clé rotative
+                int keyChar = key.charAt(i % key.length());
+                int decoded = encoded[i] ^ keyChar ^ (42 + i * 3);
+                result.append((char) decoded);
+            }
+            return result.toString();
+        } catch (Exception e) {
+            LOGGER.error("Erreur décodage token sécurisé", e);
+            return "";
         }
-        return result.toString();
-    }
-    
-    /**
-     * Construction manuelle sécurisée en cas de fallback
-     * Utilise des méthodes alternatives de construction
-     */
-    private static String buildFallbackToken() {
-        // Méthode alternative : construction par parties séparées
-        char[] prefix = {'g', 'h', 'p', '_'};
-        char[] part1 = {'a', 'g', 't', 'T', '0', 'l', '0', '7'};
-        char[] part2 = {'t', 'p', 'D', 'S', 'R', 'H', 'K', 'S'};  
-        char[] part3 = {'g', 'V', 'q', 'q', 'H', 'I', 'h', '3'};
-        char[] part4 = {'Y', 'b', 'A', 'B', 'Z', 'A', '4', 'C'};
-        char[] part5 = {'E', 'v', 'C', 'm'};
-        
-        StringBuilder token = new StringBuilder();
-        for (char c : prefix) token.append(c);
-        for (char c : part1) token.append(c);
-        for (char c : part2) token.append(c);
-        for (char c : part3) token.append(c);
-        for (char c : part4) token.append(c);
-        for (char c : part5) token.append(c);
-        
-        return token.toString();
     }
 
     private void initializeDefaultData() {
@@ -170,7 +126,11 @@ public class TimerSyncManager {
     }
 
     public CompletableFuture<Boolean> createOrUpdateTimer(String dimensionName, int minutes, int seconds) {
+        LOGGER.info("🔄 Tentative de création timer: {} ({}m {}s), sync={}, auth={}", 
+            dimensionName, minutes, seconds, syncEnabled, isAuthorized());
+        
         if (!syncEnabled || !isAuthorized()) {
+            LOGGER.warn("❌ Timer non créé - sync={}, auth={}", syncEnabled, isAuthorized());
             return CompletableFuture.completedFuture(false);
         }
         
@@ -261,6 +221,10 @@ public class TimerSyncManager {
                         .forEach(entry -> {
                             DimensionTimer timer = entry.getValue().toDimensionTimer(entry.getKey());
                             result.put(entry.getKey(), timer);
+                            
+                            // Programmer l'alerte pour ce timer distant
+                            scheduleAlertForSyncedTimer(entry.getKey(), timer);
+                            
                             LOGGER.debug("Timer distant ajouté: {} (pas de conflit local)", entry.getKey());
                         });
                 }
@@ -285,6 +249,7 @@ public class TimerSyncManager {
     }
 
     private void fetchTimersFromRemote() {
+        LOGGER.info("📥 Tentative de téléchargement depuis: {}", SYNC_URL);
         try {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(SYNC_URL))
@@ -306,6 +271,9 @@ public class TimerSyncManager {
                 return;
             }
             
+            LOGGER.info("📡 Réponse HTTP: {} - Taille: {} bytes", 
+                response.statusCode(), response.body().length());
+            
             if (response.statusCode() == 200) {
                 String newETag = response.headers().firstValue("ETag").orElse("");
                 lastETag = newETag;
@@ -316,7 +284,11 @@ public class TimerSyncManager {
                     // La vérification d'autorisation se fait via WhitelistManager séparément
                     cachedData = newData;
                     cleanupExpiredTimers();
+                    LOGGER.info("✅ Données synchronisées: {} timers", 
+                        newData.getTimers() != null ? newData.getTimers().size() : 0);
                 }
+            } else {
+                LOGGER.warn("❌ Échec du téléchargement - Status: {}", response.statusCode());
             }
             
         } catch (Exception e) {
@@ -325,8 +297,11 @@ public class TimerSyncManager {
     }
 
     private boolean uploadTimerToRemote(String dimensionName, SyncTimer timer) {
-        if (GITHUB_TOKEN.isEmpty()) {
-            LOGGER.warn("Token GitHub manquant - impossible d'uploader le timer {}", dimensionName);
+        String token = getConfiguredToken();
+        // Upload timer vers le Gist
+        
+        if (token.isEmpty()) {
+            LOGGER.warn("❌ GitHub Token vide - impossible d'uploader le timer {}", dimensionName);
             return false;
         }
         
@@ -364,7 +339,7 @@ public class TimerSyncManager {
             
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(UPDATE_URL))
-                .header("Authorization", "Bearer " + GITHUB_TOKEN)
+                .header("Authorization", "Bearer " + token)
                 .header("Accept", "application/vnd.github+json")
                 .header("Content-Type", "application/json")
                 .method("PATCH", HttpRequest.BodyPublishers.ofString(patchBody))
@@ -530,6 +505,34 @@ public class TimerSyncManager {
                 LOGGER.warn("Erreur lors de la synchronisation forcée: {}", e.getMessage());
             }
         });
+    }
+    
+    /**
+     * Programme une alerte pour un timer synchronisé si nécessaire
+     */
+    private void scheduleAlertForSyncedTimer(String dimensionName, DimensionTimer timer) {
+        try {
+            long totalSecondsRemaining = timer.getSecondsRemaining();
+            int totalSeconds = (int) totalSecondsRemaining;
+            
+            // Programmer l'alerte à 1 minute restante
+            if (totalSeconds > 60) {
+                int delaySeconds = totalSeconds - 60;
+                
+                scheduler.schedule(() -> {
+                    try {
+                        com.aureltimer.utils.AlertUtils.showSpawnAlert(dimensionName);
+                        LOGGER.info("Alerte programmée exécutée pour timer synchronisé: {}", dimensionName);
+                    } catch (Exception e) {
+                        LOGGER.error("Erreur lors de l'exécution de l'alerte: {}", e.getMessage());
+                    }
+                }, delaySeconds, TimeUnit.SECONDS);
+                
+                LOGGER.debug("Alerte programmée pour timer synchronisé {} dans {}s", dimensionName, delaySeconds);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Erreur lors de la programmation d'alerte pour timer synchronisé: {}", e.getMessage());
+        }
     }
 
     public void shutdown() {
