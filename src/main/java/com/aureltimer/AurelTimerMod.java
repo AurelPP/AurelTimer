@@ -8,6 +8,7 @@ import com.aureltimer.managers.TimerManager;
 import com.aureltimer.managers.WhitelistManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -41,6 +42,9 @@ public class AurelTimerMod implements ClientModInitializer {
         // Initialiser les composants
         timerManager = new TimerManager();
         timerOverlay = new TimerOverlay(timerManager, whitelistManager);
+        
+        // Appliquer la configuration de synchronisation
+        timerManager.setSyncEnabled(ModConfig.getInstance().shouldSyncTimers());
 
         // Configurer le ChatHandler avec le TimerManager
         ChatHandler.setTimerManager(timerManager);
@@ -69,6 +73,15 @@ public class AurelTimerMod implements ClientModInitializer {
             
             if (openConfigKey.wasPressed()) {
                 openConfigScreen(client);
+            }
+        });
+
+        // Synchronisation lors de la connexion au serveur
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            LOGGER.info("Connexion au serveur détectée - synchronisation des timers...");
+            if (timerManager != null && timerManager.isSyncEnabled() && timerManager.isSyncAuthorized()) {
+                // Forcer une synchronisation immédiate
+                timerManager.getSyncManager().forceSyncNow();
             }
         });
 

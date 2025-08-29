@@ -3,6 +3,7 @@ package com.aureltimer.gui;
 import com.aureltimer.managers.TimerManager;
 import com.aureltimer.managers.WhitelistManager;
 import com.aureltimer.models.DimensionTimer;
+import com.aureltimer.config.ModConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -11,6 +12,7 @@ import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,6 +26,16 @@ public class TimerOverlay {
     private final TimerManager timerManager;
     private final WhitelistManager whitelistManager;
     private boolean isVisible = false;
+    
+    // Cache pour optimiser les performances et quota GitHub
+    private Map<String, DimensionTimer> cachedTimers = null;
+    private long lastCacheUpdate = 0;
+    private static final long CACHE_DURATION_MS = 30000; // 30 secondes de cache
+    
+    // Position et déplacement de l'interface
+    private boolean isDragging = false;
+    private int dragOffsetX = 0;
+    private int dragOffsetY = 0;
     
     // Couleurs et style
     private static final int BACKGROUND_COLOR = 0x88000000; // Noir semi-transparent
@@ -79,20 +91,32 @@ public class TimerOverlay {
         int screenWidth = client.getWindow().getScaledWidth();
         int screenHeight = client.getWindow().getScaledHeight();
         
-        // Position et taille de l'interface (centrée)
+        // Position et taille de l'interface
         int overlayWidth = 300;
         int overlayHeight = 200;
-        int x = (screenWidth - overlayWidth) / 2;
-        int y = (screenHeight - overlayHeight) / 2;
+        
+        // Utiliser position sauvegardée ou centrer par défaut
+        ModConfig config = ModConfig.getInstance();
+        int x, y;
+        if (config.getOverlayX() == -1 || config.getOverlayY() == -1) {
+            // Position par défaut (centrée)
+            x = (screenWidth - overlayWidth) / 2;
+            y = (screenHeight - overlayHeight) / 2;
+        } else {
+            // Position sauvegardée depuis la config
+            x = Math.max(0, Math.min(config.getOverlayX(), screenWidth - overlayWidth));
+            y = Math.max(0, Math.min(config.getOverlayY(), screenHeight - overlayHeight));
+        }
         
         // Fond principal
         context.fill(x, y, x + overlayWidth, y + overlayHeight, BACKGROUND_COLOR);
         
-        // Bordure
-        context.fill(x, y, x + overlayWidth, y + 2, BORDER_COLOR); // Bordure supérieure
-        context.fill(x, y, x + 2, y + overlayHeight, BORDER_COLOR); // Bordure gauche
-        context.fill(x + overlayWidth - 2, y, x + overlayWidth, y + overlayHeight, BORDER_COLOR); // Bordure droite
-        context.fill(x, y + overlayHeight - 2, x + overlayWidth, y + overlayHeight, BORDER_COLOR); // Bordure inférieure
+        // Bordure (différente couleur si en train de déplacer)
+        int borderColor = isDragging ? 0xFFFFFFFF : BORDER_COLOR; // Blanc si drag, vert sinon
+        context.fill(x, y, x + overlayWidth, y + 2, borderColor); // Bordure supérieure
+        context.fill(x, y, x + 2, y + overlayHeight, borderColor); // Bordure gauche
+        context.fill(x + overlayWidth - 2, y, x + overlayWidth, y + overlayHeight, borderColor); // Bordure droite
+        context.fill(x, y + overlayHeight - 2, x + overlayWidth, y + overlayHeight, borderColor); // Bordure inférieure
         
         // Titre
         Text title = Text.literal("⏰ Timers Légendaires");
@@ -118,7 +142,8 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return;
         
-        Map<String, DimensionTimer> timers = timerManager.getAllTimers();
+        // Utiliser le cache pour éviter les appels fréquents
+        Map<String, DimensionTimer> timers = getCachedTimers();
         
         if (timers.isEmpty()) {
             Text noTimers = Text.literal("Aucun timer actif");
@@ -172,6 +197,7 @@ public class TimerOverlay {
         
         if (totalSeconds <= 0) return;
         
+        // Timer : 100% (pleine) au début → 0% (vide) à la fin
         float progress = (float) remainingSeconds / totalSeconds;
         int progressWidth = (int) (width * progress);
         
@@ -184,8 +210,111 @@ public class TimerOverlay {
     }
     
     /**
-     * Récupère le nom de la touche configurée pour fermer l'interface
+     * Récupère les timers avec cache pour optimiser les performances
      */
+    private Map<String, DimensionTimer> getCachedTimers() {
+        long currentTime = System.currentTimeMillis();
+        
+        // Vérifier si le cache est encore valide
+        if (cachedTimers != null && (currentTime - lastCacheUpdate) < CACHE_DURATION_MS) {
+            return cachedTimers;
+        }
+        
+        // Mettre à jour le cache
+        try {
+            cachedTimers = timerManager.getAllTimers();
+            lastCacheUpdate = currentTime;
+        } catch (Exception e) {
+            LOGGER.warn("Erreur lors de la récupération des timers: {}", e.getMessage());
+            // Retourner le cache précédent en cas d'erreur
+            if (cachedTimers == null) {
+                cachedTimers = new HashMap<>();
+            }
+        }
+        
+        return cachedTimers;
+    }
+    
+    /**
+     * Force le rafraîchissement du cache
+     */
+    public void refreshCache() {
+        cachedTimers = null;
+        lastCacheUpdate = 0;
+    }
+    
+    /**
+     * Gestion des événements de souris pour le drag & drop
+     */
+    public boolean handleMouseClick(double mouseX, double mouseY, int button) {
+        if (!isVisible) return false;
+        
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) return false;
+        
+        int screenWidth = client.getWindow().getScaledWidth();
+        int screenHeight = client.getWindow().getScaledHeight();
+        int overlayWidth = 300;
+        int overlayHeight = 200;
+        
+        // Calculer la position actuelle depuis la config
+        ModConfig config = ModConfig.getInstance();
+        int x = config.getOverlayX() == -1 ? (screenWidth - overlayWidth) / 2 : config.getOverlayX();
+        int y = config.getOverlayY() == -1 ? (screenHeight - overlayHeight) / 2 : config.getOverlayY();
+        
+        // Vérifier si le clic est dans la zone de titre (pour drag)
+        if (button == 0 && mouseX >= x && mouseX <= x + overlayWidth && 
+            mouseY >= y && mouseY <= y + 40) { // Zone de titre étendue
+            
+            isDragging = true;
+            dragOffsetX = (int) (mouseX - x);
+            dragOffsetY = (int) (mouseY - y);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public boolean handleMouseRelease(double mouseX, double mouseY, int button) {
+        if (isDragging && button == 0) {
+            isDragging = false;
+            
+            // Sauvegarder la position finale à la fin du drag
+            ModConfig config = ModConfig.getInstance();
+            config.setOverlayPosition(config.getOverlayX(), config.getOverlayY());
+            
+            return true;
+        }
+        return false;
+    }
+    
+    public boolean handleMouseDrag(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (!isDragging) return false;
+        
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) return false;
+        
+        int screenWidth = client.getWindow().getScaledWidth();
+        int screenHeight = client.getWindow().getScaledHeight();
+        int overlayWidth = 300;
+        int overlayHeight = 200;
+        
+        // Calculer nouvelle position
+        int newX = (int) (mouseX - dragOffsetX);
+        int newY = (int) (mouseY - dragOffsetY);
+        
+        // Contraindre à l'écran et sauvegarder temporairement (sans sauvegarder le fichier)
+        int newOverlayX = Math.max(0, Math.min(newX, screenWidth - overlayWidth));
+        int newOverlayY = Math.max(0, Math.min(newY, screenHeight - overlayHeight));
+        
+        // Mise à jour temporaire sans sauvegarde fichier (trop fréquent)
+        ModConfig config = ModConfig.getInstance();
+        config.setOverlayXTemporary(newOverlayX);
+        config.setOverlayYTemporary(newOverlayY);
+        
+        return true;
+    }
+    
     private String getCloseKeyName() {
         try {
             // Chercher la hotkey "toggleoverlay" dans les options Minecraft

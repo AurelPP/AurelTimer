@@ -21,7 +21,6 @@ public class HomeTracker {
             // Dimensions vanilla toujours autorisées
             if ("Nether".equals(cleanName) || "End".equals(cleanName) || "Overworld".equals(cleanName)) {
                 lastHomeName = cleanName;
-                LOGGER.info("🌍 DIMENSION ACTUELLE: '{}'", lastHomeName);
                 return;
             }
             
@@ -33,7 +32,6 @@ public class HomeTracker {
             }
             
             lastHomeName = cleanName;
-            LOGGER.info("🌍 DIMENSION ACTUELLE: '{}'", lastHomeName);
         }
     }
 

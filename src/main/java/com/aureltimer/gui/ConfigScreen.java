@@ -20,6 +20,7 @@ public class ConfigScreen extends Screen {
     
     private ButtonWidget alertDisplayButton;
     private ButtonWidget soundEnabledButton;
+    private ButtonWidget syncEnabledButton;
     private ButtonWidget doneButton;
     
     public ConfigScreen(Screen parent) {
@@ -71,10 +72,17 @@ public class ConfigScreen extends Screen {
                 cycleSoundEnabled();
             }).dimensions(centerX - 100, centerY + 10, 200, 20).build());
         
+        // Bouton pour la synchronisation
+        this.syncEnabledButton = this.addDrawableChild(ButtonWidget.builder(
+            Text.literal("Synchronisation: " + config.getSyncEnabled().toString()), 
+            (button) -> {
+                cycleSyncEnabled();
+            }).dimensions(centerX - 100, centerY + 50, 200, 20).build());
+        
         // Bouton Terminé
         this.doneButton = this.addDrawableChild(ButtonWidget.builder(Text.literal("Terminé"), (button) -> {
             this.client.setScreen(this.parent);
-        }).dimensions(centerX - 50, centerY + 50, 100, 20).build());
+        }).dimensions(centerX - 50, centerY + 90, 100, 20).build());
     }
     
     private void cycleAlertDisplay() {
@@ -115,12 +123,33 @@ public class ConfigScreen extends Screen {
         soundEnabledButton.setMessage(Text.literal("Son alerte: " + config.getSoundEnabled().toString()));
     }
     
+    private void cycleSyncEnabled() {
+        ModConfig.SyncEnabled[] values = ModConfig.SyncEnabled.values();
+        ModConfig.SyncEnabled current = config.getSyncEnabled();
+        int currentIndex = -1;
+        
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == current) {
+                currentIndex = i;
+                break;
+            }
+        }
+        
+        int nextIndex = (currentIndex + 1) % values.length;
+        config.setSyncEnabled(values[nextIndex]);
+        
+        // Appliquer immédiatement le changement au TimerManager
+        if (AurelTimerMod.getTimerManager() != null) {
+            AurelTimerMod.getTimerManager().setSyncEnabled(config.shouldSyncTimers());
+        }
+        
+        // Mettre à jour le texte du bouton
+        syncEnabledButton.setMessage(Text.literal("Synchronisation: " + config.getSyncEnabled().toString()));
+    }
+    
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context, mouseX, mouseY, delta);
-        
-        // Titre
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
         
         // Vérifier l'autorisation avant d'afficher le contenu
         if (AurelTimerMod.getWhitelistManager() != null && !AurelTimerMod.getWhitelistManager().isVerified()) {
@@ -140,17 +169,26 @@ public class ConfigScreen extends Screen {
                     Text.literal(message), 
                     this.width / 2, this.height / 2 + 10, 0xAAAAAA);
             }
-        } else {
-            // Labels
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Affichage alerte:"), this.width / 2 - 100, this.height / 2 - 50, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Son alerte:"), this.width / 2 - 100, this.height / 2 - 10, 0xFFFFFF);
-            
-            // Description des options
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Chat: Affiche l'alerte dans le chat"), this.width / 2 - 100, this.height / 2 + 80, 0xAAAAAA);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Non: Désactive l'affichage de l'alerte"), this.width / 2 - 100, this.height / 2 + 95, 0xAAAAAA);
         }
         
+        // Rendre les widgets AVANT le texte de description
         super.render(context, mouseX, mouseY, delta);
+        
+        // Tout le texte rendu APRÈS les boutons (si autorisé)
+        if (AurelTimerMod.getWhitelistManager() == null || AurelTimerMod.getWhitelistManager().isVerified()) {
+            // Titre rendu en dernier pour être visible
+            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
+            
+            // Labels des options
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Affichage alerte:"), this.width / 2 - 100, this.height / 2 - 50, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Son alerte:"), this.width / 2 - 100, this.height / 2 - 10, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Synchronisation:"), this.width / 2 - 100, this.height / 2 + 30, 0xFFFFFF);
+            
+            // Description des options
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Chat: Affiche l'alerte dans le chat"), this.width / 2 - 100, this.height / 2 + 140, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Non: Désactive l'affichage de l'alerte"), this.width / 2 - 100, this.height / 2 + 155, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Sync: Partage les timers avec d'autres joueurs"), this.width / 2 - 100, this.height / 2 + 170, 0xAAAAAA);
+        }
     }
     
     @Override

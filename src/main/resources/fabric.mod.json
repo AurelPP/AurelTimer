@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "aurel-timer",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "⏰ Aurel Timer",
-  "description": "Mod qui permet de tracker facilement les timers de légendaires avec prédiction des phases du jour et système de whitelist dynamique",
+  "description": "Mod de synchronisation des timers légendaires avec interface déplaçable, alertes intelligentes et partage multi-joueurs",
   "authors": [
     "Aurel"
   ],

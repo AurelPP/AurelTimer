@@ -16,6 +16,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mixin pour détecter les dimensions et les timers de spawn légendaires
@@ -25,6 +27,10 @@ public class DimensionDetectionMixin {
     
     private static final Logger LOGGER = LoggerFactory.getLogger("DimensionDetectionMixin");
     private final HomeTracker homeTracker = new HomeTracker();
+    
+    // Tracker pour éviter le spam d'alertes
+    private static final Set<String> scheduledAlerts = ConcurrentHashMap.newKeySet();
+    private static long lastCleanup = System.currentTimeMillis();
     
     // Pattern pour extraire le temps des messages de spawn légendaire
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)\\s+minutes?\\s+et\\s+(\\d+)\\s+secondes?");
@@ -153,6 +159,23 @@ public class DimensionDetectionMixin {
     
     private void scheduleAlertCheck(String dimensionName, String timeString) {
         try {
+            // Nettoyage périodique (toutes les 5 minutes)
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastCleanup > 300000) { // 5 minutes
+                scheduledAlerts.clear();
+                lastCleanup = currentTime;
+                LOGGER.debug("Nettoyage périodique des alertes programmées");
+            }
+            
+            // Créer une clé unique pour cette alerte (dimension + temps approximatif)
+            String alertKey = dimensionName + "_" + timeString;
+            
+            // Vérifier si une alerte est déjà programmée pour cette dimension/temps
+            if (scheduledAlerts.contains(alertKey)) {
+                LOGGER.debug("Alerte déjà programmée pour {}, ignorée", dimensionName);
+                return;
+            }
+            
             // Extraire le temps total en secondes
             Matcher matcher = TIME_PATTERN.matcher(timeString);
             if (matcher.find()) {
@@ -164,12 +187,19 @@ public class DimensionDetectionMixin {
                 if (totalSeconds > 60) {
                     int delaySeconds = totalSeconds - 60;
                     
+                    // Marquer cette alerte comme programmée
+                    scheduledAlerts.add(alertKey);
+                    
                     new Thread(() -> {
                         try {
                             Thread.sleep(delaySeconds * 1000L);
                             showSpawnAlert(dimensionName);
+                            
+                            // Nettoyer après l'alerte
+                            scheduledAlerts.remove(alertKey);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
+                            scheduledAlerts.remove(alertKey);
                         }
                     }).start();
                     

@@ -5,6 +5,28 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.0] - 2025-08-27
+
+### 🌐 Ajouté
+- **Synchronisation multi-utilisateurs** : Les timers se partagent automatiquement entre tous les joueurs du mod
+- **Position d'interface persistante** : L'interface garde sa position après redémarrage du jeu
+- **Interface déplaçable** : Drag & drop de l'interface des timers (clic sur le titre + glisser)
+- **Synchronisation à la connexion** : Récupération automatique des timers lors de la connexion au serveur
+- **Priorité locale** : Les timers créés localement ont priorité sur les timers distants
+- **Débounce intelligent** : Système anti-spam pour les uploads (10 secondes)
+
+### 🔧 Corrigé
+- **Fix barres de progression** : Les barres ne se réinitialisent plus lors de la synchronisation
+- **Fix spam d'alertes** : Une seule alerte par timer (fini les 25 sons d'enclume !)
+- **Optimisation quota GitHub** : Cache optimisé (30s interface, 60s sync) pour supporter 20+ utilisateurs
+- **Fix affichage config** : Texte affiché correctement par-dessus les boutons
+
+### ⚡ Amélioré
+- **Performance interface** : Cache intelligent pour éviter les blocages
+- **Gestion mémoire** : Nettoyage automatique des données obsolètes
+- **Feedback visuel** : Bordure blanche pendant le déplacement d'interface
+- **Sauvegarde optimisée** : Position sauvée seulement à la fin du déplacement
+
 ## [1.3.0] - 2025-08-27
 
 ### 🔐 Ajouté

@@ -10,10 +10,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class TimerManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimerManager.class);
     private final Map<String, DimensionTimer> dimensionTimers = new ConcurrentHashMap<>();
+    private final TimerSyncManager syncManager;
+    
+    public TimerManager() {
+        this.syncManager = new TimerSyncManager();
+    }
     
     public void updateTimer(String dimensionName, int minutes, int seconds) {
         LocalDateTime now = LocalDateTime.now();
@@ -21,6 +28,18 @@ public class TimerManager {
         
         DimensionTimer timer = new DimensionTimer(dimensionName, minutes, seconds, spawnTime);
         dimensionTimers.put(dimensionName, timer);
+        
+        // Synchroniser avec les autres utilisateurs si activé
+        if (syncManager.isSyncEnabled() && syncManager.isAuthorized()) {
+            syncManager.createOrUpdateTimer(dimensionName, minutes, seconds)
+                .thenAccept(success -> {
+                    if (success) {
+                        LOGGER.info("Timer {} synchronisé avec succès", dimensionName);
+                    } else {
+                        LOGGER.warn("Échec de la synchronisation du timer {}", dimensionName);
+                    }
+                });
+        }
         
         LOGGER.info("Timer mis à jour pour {}: {} minutes et {} secondes", dimensionName, minutes, seconds);
     }
@@ -53,7 +72,33 @@ public class TimerManager {
     }
     
     public Map<String, DimensionTimer> getAllTimers() {
-        return new HashMap<>(dimensionTimers);
+        Map<String, DimensionTimer> allTimers = new HashMap<>(dimensionTimers);
+        
+        // Ajouter les timers synchronisés si la sync est activée (asynchrone pour éviter les blocages)
+        if (syncManager.isSyncEnabled() && syncManager.isAuthorized()) {
+            try {
+                // Utiliser un timeout court pour éviter les blocages
+                Map<String, DimensionTimer> syncedTimers = syncManager.getAllSyncedTimers()
+                    .orTimeout(100, TimeUnit.MILLISECONDS) // Timeout de 100ms
+                    .exceptionally(throwable -> {
+                        // En cas d'erreur ou timeout, retourner map vide
+                        return new HashMap<>();
+                    })
+                    .get();
+                
+                // Fusionner les timers (priorité aux locaux en cas de conflit)
+                for (Map.Entry<String, DimensionTimer> entry : syncedTimers.entrySet()) {
+                    if (!allTimers.containsKey(entry.getKey())) {
+                        allTimers.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            } catch (Exception e) {
+                // Ignorer silencieusement pour ne pas affecter les performances
+                LOGGER.debug("Timers synchronisés non disponibles: {}", e.getMessage());
+            }
+        }
+        
+        return allTimers;
     }
     
     public DimensionTimer getTimer(String dimensionName) {
@@ -75,6 +120,35 @@ public class TimerManager {
     }
     
     public int getActiveTimerCount() {
-        return dimensionTimers.size();
+        int localCount = dimensionTimers.size();
+        int syncedCount = syncManager.getCachedTimerCount();
+        return Math.max(localCount, syncedCount); // Éviter de compter les doublons
+    }
+    
+    // Méthodes pour gérer la synchronisation
+    public TimerSyncManager getSyncManager() {
+        return syncManager;
+    }
+    
+    public boolean isSyncEnabled() {
+        return syncManager.isSyncEnabled();
+    }
+    
+    public void setSyncEnabled(boolean enabled) {
+        syncManager.setSyncEnabled(enabled);
+    }
+    
+    public boolean isSyncAuthorized() {
+        return syncManager.isAuthorized();
+    }
+    
+    public String getLastSyncTime() {
+        return syncManager.getLastSyncTime();
+    }
+    
+    public void shutdown() {
+        if (syncManager != null) {
+            syncManager.shutdown();
+        }
     }
 }

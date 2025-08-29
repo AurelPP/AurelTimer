@@ -1,150 +1,92 @@
-# ⏰ Aurel Timer - Mod Minecraft Fabric
+# 🕒 AurelTimer - Mod de Synchronisation des Légendaires
 
-Un mod simple et efficace pour tracker les timers de spawn légendaires sur Cobblestory.
+## 🎯 À quoi ça sert ?
 
-## ✨ Fonctionnalités
+AurelTimer est un mod exclusif à la fondation Aether qui gère les timers de spawn des Pokémon légendaires avec une interface claire et des alertes automatiques.
 
-- **Détecte automatiquement** le nom de la dimension actuelle (Construction1, Ressource2, etc.)
-- **Détection automatique** des messages `/legendaryspawn`
+## ⚡ Comment ça marche ?
 
-- **Interface claire** avec couleurs selon le temps restant
-- **Mise à jour en temps réel** des countdowns
-- **Alerte à 1 minute** avant expiration du timer
-- **Message dans le chat** : "⚠ SPAWN DE LÉGENDAIRE DANS 1 MINUTE EN [DIMENSION] ⚠"
-- **Son d'enclume Minecraft** pour alerter le joueur
+### 🎮 Utilisation simple
+Quand tu lances `/legendaryspawn` dans une dimension, le mod enregistre automatiquement le timer et l'associe à la bonne dimension.
 
-- **Hotkey configurable** pour ouvrir/fermer l'interface
-- **Interface de configuration** accessible via la touche K de base
+### 📊 Interface intuitive  
+Appuie sur **L** pour voir tous tes timers actifs avec le temps restant exact et la phase du jour prédite (Midi, Crépuscule, etc.).
 
-## 🔐 **Système de sécurité par guilde**
+### 🔔 Alertes intelligentes
+Reçois automatiquement une notification 1 minute avant chaque spawn avec un son d'enclume pour ne jamais rater un légendaire.
 
-### **Vérification automatique**
-- **Exécution automatique** de `/t info` pour vérifier l'appartenance
-- **Vérification unique** : une seule fois par session de jeu
-- **Accès restreint** : seuls les membres de la guilde **Aether** peuvent utiliser le mod
+### 🕐 Prédiction des phases
+Le mod calcule automatiquement à quelle phase du jour le légendaire va spawn (Dawn, Noon, Night, etc.) pour t'aider à optimiser tes captures.
 
-### **Messages de statut**
-- **✅ Autorisé** : "Aurel Timer : Appartenance à la guilde Aether vérifiée"
-- **❌ Refusé** : "Aurel Timer : Vous n'appartenez pas à la guilde Aether, accès refusé"
-- **⏳ En cours** : "Vérification de guilde en cours..." (si pas encore vérifié)
+### 🌐 Synchronisation automatique
+Tous les timers se partagent entre les joueurs du mod ! Si quelqu'un crée un timer, tu le vois automatiquement.
 
-### **Protection complète**
-- **Interface des timers** : bloquée si non autorisé
-- **Interface de configuration** : bloquée si non autorisé
-- **Détection des timers** : désactivée si non autorisé
-- **Toutes les fonctionnalités** : protégées par la vérification
+### 🖱️ Interface déplaçable
+Clique et glisse le titre de l'interface pour la positionner où tu veux. La position est sauvegardée !
+
+## 🎛️ Personnalisation
+
+### Configuration rapide
+Appuie sur **K** pour accéder aux options :
+- **Affichage alerte** : Chat / Non  
+- **Son alerte** : Oui / Non
+- **Synchronisation** : Oui / Non
+
+### Configuration instantanée
+Tous les changements s'appliquent immédiatement sans redémarrage !
 
 ## 🚀 Installation
 
-### **Prérequis**
-- Minecraft 1.21.1
-- Fabric Loader
-- Fabric API 0.131.3+
+### Prérequis
+- **Minecraft** : 1.20.1
+- **Fabric Loader** : 0.14.21+  
+- **Fabric API** : 0.84.0+
 
-### **Étapes d'installation**
-1. **Téléchargez** le fichier `.jar` depuis les releases
-2. **Placez-le** dans le dossier `mods`
-3. **Lancez** le jeu avec Fabric
-4. **Attendez** la vérification automatique de guilde
+### Étapes
+1. Télécharge la dernière version depuis [Releases](../../releases)
+2. Place le fichier `.jar` dans ton dossier `mods/`
+3. **Pour la synchronisation** : Configure ton token GitHub dans `TimerSyncManager.java` (ligne 33)
+4. Lance Minecraft avec Fabric
+5. Appuie sur **L** en jeu pour tester !
 
-## 🎯 Utilisation
+## 🌟 Avantages
 
-### **Première connexion**
-1. **Connectez-vous** au serveur Cobblestory
-3. **Le mod exécute automatiquement** `/t info`
-4. **Vérification** de l'appartenance à la guilde Aether
-5. **Accès accordé/refusé** selon le résultat
+✅ **Interface propre** qui ne pollue pas ton écran  
+✅ **Alertes fiables** pour ne jamais rater un spawn  
+✅ **Prédiction des phases** pour optimiser selon l'heure Minecraft  
+✅ **Gestion multi-dimensions** automatique  
+✅ **Synchronisation temps réel** avec les autres joueurs  
+✅ **Position personnalisable** et sauvegardée  
 
-### **Commandes de base**
-- **`/legendaryspawn`** : Ajoute le timer du légendaire de la dimension actuelle dans l'interface des timers
-- **Touche L** (par défaut) : Ouvre/ferme l'interface des timers
-- **Touche K** (par défaut) : Ouvre l'interface de configuration
+## 🕐 Phases du Jour Reconnues
 
-### **Comment ça marche**
-1. **Téléportez-vous** dans une dimension (ex: `/home construction1`)
-2. **Lancez** `/legendaryspawn` pour démarrer le timer
-3. **Surveillez** l'interface pour voir le countdown
-4. **Recevez** l'alerte à 1 minute restante
-5. **Répétez** dans d'autres dimensions
+- **🌅 Dawn** (Aube) : 05:00 - 05:59
+- **🌄 Morning** (Matin) : 06:00 - 10:59  
+- **☀️ Noon** (Midi) : 11:00 - 12:59
+- **🌤️ Afternoon** (Après-midi) : 13:00 - 17:59
+- **🌞 Day** (Jour) : 06:00 - 17:59
+- **🌆 Dusk** (Crépuscule) : 18:00 - 18:59
+- **🌙 Night** (Nuit) : 19:00 - 04:59
+- **🌃 Midnight** (Minuit) : 23:00 - 00:59
 
-### **Interface des timers**
-- **Titre** : "⏰ Timers Légendaires"
-- **Instructions** : "Appuie sur [TOUCHE] pour fermer"
-- **Liste des timers** : Dimension + temps restant
-- **Couleurs** : Vert (>5min) → Orange (1-5min) → Rouge (<1min)
+## 🎮 Raccourcis
 
-## 🔧 Configuration
+- **L** : Ouvrir/fermer l'interface des timers
+- **K** : Ouvrir la configuration
+- **Clic + Glisser** : Déplacer l'interface
 
-### **Interface de configuration (Touche K)**
-- **Affichage alerte** : Chat ou Non
-- **Son alerte** : Oui ou Non
-- **Bouton "Terminé"** pour sauvegarder
+## 🆕 Nouveautés v1.4
 
-### **Fichier de configuration**
-- **Emplacement** : `config/aurel-timer-config.json`
-- **Format** : JSON automatique
-- **Sauvegarde** : Instantanée à chaque changement
+🌐 **Synchronisation multi-joueurs** : Partage automatique des timers  
+🖱️ **Interface déplaçable** : Drag & drop pour positionner l'interface  
+💾 **Position persistante** : Ta position d'interface est sauvegardée  
+🔄 **Sync à la connexion** : Récupération automatique des timers  
+🐛 **Corrections importantes** : Fini les bugs de barres de progression et le spam d'alertes
 
-### **Exemple de configuration**
-```json
-{
-  "alertDisplay": "CHAT",
-  "soundEnabled": "YES"
-}
-```
+## 📝 Historique
 
-## 🎨 Personnalisation
+Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet des versions.
 
-### **Hotkeys personnalisables**
-- **Ouvrir/fermer interface** : Configurable dans Options → Contrôles
-- **Ouvrir configuration** : Touche K (fixe)
-- **Interface intelligente** : Affiche toujours la vraie touche configurée
+## 📄 Licence
 
-### **Couleurs et style**
-- **Fond** : Noir semi-transparent
-- **Bordures** : Vert
-- **Titre** : Blanc
-- **Texte** : Gris clair
-- **Timers** : Jaune → Orange → Rouge
-
-## 🐛 Dépannage
-
-### **Problèmes courants**
-- **Interface ne s'ouvre pas** : Vérifiez la hotkey dans Options → Contrôles
-- **Timers ne se créent pas** : Assurez-vous d'être dans une dimension et d'utiliser `/legendaryspawn`
-- **Alertes ne fonctionnent pas** : Vérifiez la configuration avec la touche K
-- **Accès refusé** : Vérifiez que vous appartenez à la guilde Aether
-
-### **Vérification de guilde**
-- **Message "Vérification en cours"** : Attendez la fin de la vérification
-- **Message "Accès refusé"** : Vous n'appartenez pas à la guilde Aether
-- **Aucun message** : Vérifiez que le mod est bien installé et activé
-
-## 🔄 Versions
-
-### **v1.1.0 - Version actuelle**
-- ✅ Détection automatique des dimensions
-- ✅ Système de timers complet
-- ✅ Alertes à 1 minute avec son
-- ✅ Interface de configuration
-- ✅ Hotkeys configurables
-- ✅ Interface moderne et responsive
-- 🔐 **NOUVEAU : Système de sécurité par guilde Aether**
-
-## 🤝 Contribution
-
-Ce mod est développé pour la fondation Aether. N'hésitez pas à :
-- **Signaler des bugs**
-- **Proposer des améliorations**
-- **Partager vos retours d'expérience**
-
-## 📜 Licence
-
-Droits réservés.
-
----
-
-**Développé avec ❤️ pour la fondation Aether par Aurel**
-
-*Un mod sécurisé et efficace pour tracker vos timers légendaires !*
-
+Tous droits réservés. Usage exclusif pour la Fondation Aether.

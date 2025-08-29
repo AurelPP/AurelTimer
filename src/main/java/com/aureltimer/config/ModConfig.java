@@ -52,9 +52,30 @@ public class ModConfig {
         }
     }
     
+    public enum SyncEnabled {
+        YES("Oui"),
+        NO("Non");
+        
+        private final String displayName;
+        
+        SyncEnabled(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+    
     // Valeurs par défaut
     private AlertDisplay alertDisplay = AlertDisplay.CHAT;
     private SoundEnabled soundEnabled = SoundEnabled.YES;
+    private SyncEnabled syncEnabled = SyncEnabled.YES;
+    
+    // Position de l'interface des timers (-1 = centrée par défaut)
+    private int overlayX = -1;
+    private int overlayY = -1;
     
     // Instance singleton
     private static ModConfig instance;
@@ -82,6 +103,11 @@ public class ModConfig {
                     if (loadedConfig != null) {
                         this.alertDisplay = loadedConfig.alertDisplay;
                         this.soundEnabled = loadedConfig.soundEnabled;
+                        // Gérer la nouvelle option de sync (peut être null dans les anciens configs)
+                        this.syncEnabled = loadedConfig.syncEnabled != null ? loadedConfig.syncEnabled : SyncEnabled.YES;
+                        // Charger la position de l'interface (valeurs par défaut si non présentes)
+                        this.overlayX = loadedConfig.overlayX;
+                        this.overlayY = loadedConfig.overlayY;
                         LOGGER.info("Configuration chargée depuis {}", configFile.getAbsolutePath());
                     }
                 }
@@ -156,5 +182,55 @@ public class ModConfig {
      */
     public boolean shouldShowInChat() {
         return alertDisplay == AlertDisplay.CHAT;
+    }
+    
+    public SyncEnabled getSyncEnabled() {
+        return syncEnabled;
+    }
+    
+    public void setSyncEnabled(SyncEnabled syncEnabled) {
+        this.syncEnabled = syncEnabled;
+        saveConfig();
+    }
+    
+    /**
+     * Vérifie si la synchronisation est activée
+     */
+    public boolean shouldSyncTimers() {
+        return syncEnabled == SyncEnabled.YES;
+    }
+    
+    // Getters et Setters pour la position de l'interface
+    public int getOverlayX() {
+        return overlayX;
+    }
+    
+    public void setOverlayX(int overlayX) {
+        this.overlayX = overlayX;
+        saveConfig();
+    }
+    
+    public int getOverlayY() {
+        return overlayY;
+    }
+    
+    public void setOverlayY(int overlayY) {
+        this.overlayY = overlayY;
+        saveConfig();
+    }
+    
+    public void setOverlayPosition(int x, int y) {
+        this.overlayX = x;
+        this.overlayY = y;
+        saveConfig();
+    }
+    
+    // Setters temporaires pour le drag (sans sauvegarde immédiate)
+    public void setOverlayXTemporary(int x) {
+        this.overlayX = x;
+    }
+    
+    public void setOverlayYTemporary(int y) {
+        this.overlayY = y;
     }
 }

@@ -6,7 +6,8 @@
   "mixins": [
     "TestMixin",
     "GameRendererMixin",
-    "DimensionDetectionMixin"
+    "DimensionDetectionMixin",
+    "MouseMixin"
   ],
   "client": [
   ],
