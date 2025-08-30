@@ -252,8 +252,8 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return false;
         
-        // Ne pas autoriser le drag & drop si un menu Minecraft est ouvert (sauf le chat)
-        if (client.currentScreen != null && !isChatScreen(client.currentScreen)) {
+        // Autoriser le drag & drop SEULEMENT si le chat est ouvert
+        if (client.currentScreen == null || !isChatScreen(client.currentScreen)) {
             return false;
         }
         
@@ -299,8 +299,8 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return false;
         
-        // Arrêter le dragging si un menu Minecraft s'ouvre pendant (sauf le chat)
-        if (client.currentScreen != null && !isChatScreen(client.currentScreen)) {
+        // Arrêter le dragging si le chat se ferme
+        if (client.currentScreen == null || !isChatScreen(client.currentScreen)) {
             isDragging = false;
             return false;
         }

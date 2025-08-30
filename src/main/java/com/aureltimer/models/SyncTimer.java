@@ -39,8 +39,15 @@ public class SyncTimer {
 
     public boolean isExpired() {
         try {
-            return Instant.now().isAfter(Instant.parse(expiresAt));
+            Instant now = Instant.now();
+            Instant expiry = Instant.parse(expiresAt);
+            boolean expired = now.isAfter(expiry);
+            
+
+            
+            return expired;
         } catch (Exception e) {
+            System.out.println("DEBUG isExpired ERROR for " + expiresAt + ": " + e.getMessage());
             return true; // Si erreur de parsing, considérer comme expiré
         }
     }

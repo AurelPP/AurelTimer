@@ -5,6 +5,32 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.2] - 2025-08-30
+
+### 🔥 Correctifs Critiques Synchronisation
+- **Fix alertes dupliquées** : Plus de spam de 6-20 alertes pour le même timer 
+- **Fix drag & drop** : Interface déplaçable uniquement avec le chat ouvert
+- **Fix re-sync timers expirés** : Correction des délais de 1-2 minutes pour les timers re-créés
+- **Fix cache ETag intelligent** : Invalidation automatique pour détecter les nouveaux timers
+
+### ⚡ Optimisations Performance
+- **Sync ultra-rapide** : Toutes les 15 secondes au lieu de 30
+- **Cache timestamp optimisé** : Blocs de 15 secondes pour réactivité maximale
+- **Protection cache thread-safe** : Backup/restore automatique en cas d'erreur
+- **Gestion erreurs robuste** : Retry automatique pour erreurs serveur GitHub
+
+### 🔧 Améliorations Techniques
+- **Alertes uniques garanties** : Programmation seulement pour nouveaux timers
+- **ETag invalidation intelligente** : Force refresh quand timers expirent
+- **Logs diagnostics étendus** : Debug détaillé pour autorisation et upload
+- **Sync post-upload immédiate** : Propagation en 1 seconde après création
+
+### 📊 Résultat Final
+- **Décalage sync** : ~5 secondes (excellent pour système distribué)
+- **Réactivité** : 15 secondes maximum pour nouveaux timers
+- **Stabilité** : Protection complète contre corruption cache
+- **Fiabilité** : Gestion tous cas d'usage (création, expiration, re-création)
+
 ## [1.4.1] - 2025-08-30
 
 ### 🐛 Correctifs Critiques

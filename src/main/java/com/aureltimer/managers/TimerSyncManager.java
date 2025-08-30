@@ -30,8 +30,8 @@ public class TimerSyncManager {
     private static final String SYNC_URL_BASE = "https://gist.githubusercontent.com/AurelPP/33163bd71cd0769f58c617fec115b690/raw/timer_sync.json";
     
     private String getSyncUrl() {
-        // Ajouter timestamp par tranche de 5 minutes pour équilibrer cache vs fraîcheur
-        long timestampBlock = (System.currentTimeMillis() / (5 * 60 * 1000)) * (5 * 60 * 1000);
+        // Ajouter timestamp par tranche de 15 secondes pour réactivité maximale
+        long timestampBlock = (System.currentTimeMillis() / (15 * 1000)) * (15 * 1000);
         return SYNC_URL_BASE + "?t=" + timestampBlock;
     }
     private static final String UPDATE_URL = "https://api.github.com/gists/33163bd71cd0769f58c617fec115b690";
@@ -125,18 +125,36 @@ public class TimerSyncManager {
                     LOGGER.warn("Erreur lors de la synchronisation périodique: {}", e.getMessage());
                 }
             }
-        }, 60, 60, TimeUnit.SECONDS);
+        }, 15, 15, TimeUnit.SECONDS);
         
         // Nettoyage des timers expirés toutes les 30 secondes
         scheduler.scheduleWithFixedDelay(this::cleanupExpiredTimers, 30, 30, TimeUnit.SECONDS);
+        
+        // Invalidation ETag forcée toutes les 2 minutes pour éviter les blocages cache
+        scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                // Forcer refresh si pas de sync depuis 90 secondes
+                if (Duration.between(lastFetch, Instant.now()).getSeconds() > 90) {
+                    LOGGER.debug("🔄 Invalidation ETag forcée - Pas de sync depuis 90s");
+                    lastETag = ""; // Reset ETag pour forcer téléchargement
+                }
+            } catch (Exception e) {
+                LOGGER.debug("Erreur invalidation ETag: {}", e.getMessage());
+            }
+        }, 120, 120, TimeUnit.SECONDS);
     }
 
     public CompletableFuture<Boolean> createOrUpdateTimer(String dimensionName, int minutes, int seconds) {
         LOGGER.info("🔄 Tentative de création timer: {} ({}m {}s), sync={}, auth={}", 
             dimensionName, minutes, seconds, syncEnabled, isAuthorized());
         
-        if (!syncEnabled || !isAuthorized()) {
-            LOGGER.warn("❌ Timer non créé - sync={}, auth={}", syncEnabled, isAuthorized());
+        if (!syncEnabled) {
+            LOGGER.warn("❌ Timer non créé - synchronisation désactivée");
+            return CompletableFuture.completedFuture(false);
+        }
+        
+        if (!isAuthorized()) {
+            LOGGER.warn("❌ Timer non créé - utilisateur '{}' non autorisé", getPlayerName());
             return CompletableFuture.completedFuture(false);
         }
         
@@ -206,7 +224,8 @@ public class TimerSyncManager {
                 
                 // Vérifier si le cache des DimensionTimer est encore valide (60 secondes pour quota GitHub)
                 long currentTime = System.currentTimeMillis();
-                if (currentTime - lastDimensionTimerUpdate < 60000 && !cachedDimensionTimers.isEmpty()) {
+                synchronized (cachedDimensionTimers) {
+                    if (currentTime - lastDimensionTimerUpdate < 60000 && !cachedDimensionTimers.isEmpty()) {
                     // Filtrer les timers expirés du cache
                     Map<String, DimensionTimer> validCachedTimers = new HashMap<>();
                     for (Map.Entry<String, DimensionTimer> entry : cachedDimensionTimers.entrySet()) {
@@ -214,9 +233,10 @@ public class TimerSyncManager {
                             validCachedTimers.put(entry.getKey(), entry.getValue());
                         }
                     }
-                    if (!validCachedTimers.isEmpty()) {
-                        LOGGER.debug("Utilisation du cache DimensionTimer ({} timers)", validCachedTimers.size());
-                        return validCachedTimers;
+                        if (!validCachedTimers.isEmpty()) {
+                            LOGGER.debug("Utilisation du cache DimensionTimer ({} timers)", validCachedTimers.size());
+                            return validCachedTimers;
+                        }
                     }
                 }
                 
@@ -226,26 +246,47 @@ public class TimerSyncManager {
                 // Note: Les vrais timers locaux sont gérés par TimerManager.getAllTimers()
                 // Ici on ne gère que les timers distants depuis le Gist
                 
+                LOGGER.debug("🔄 Reconstruction cache - Authorization: {}, CachedData: {}", 
+                    isAuthorized(), cachedData != null);
+                
                 // Puis ajouter les timers distants SEULEMENT si pas de timer local pour cette dimension
                 if (isAuthorized() && cachedData != null && cachedData.getTimers() != null) {
                     cachedData.getTimers().entrySet().stream()
+
                         .filter(entry -> !entry.getValue().isExpired())
                         .filter(entry -> !result.containsKey(entry.getKey())) // Pas de conflit avec local
                         .forEach(entry -> {
                             DimensionTimer timer = entry.getValue().toDimensionTimer(entry.getKey());
                             result.put(entry.getKey(), timer);
                             
-                            // Programmer l'alerte pour ce timer distant
-                            scheduleAlertForSyncedTimer(entry.getKey(), timer);
+                            // Programmer l'alerte seulement si nouveau timer (pas dans l'ancien cache)
+                            synchronized (cachedDimensionTimers) {
+                                if (!cachedDimensionTimers.containsKey(entry.getKey())) {
+                                    scheduleAlertForSyncedTimer(entry.getKey(), timer);
+                                }
+                            }
                             
-                            LOGGER.debug("Timer distant ajouté: {} (pas de conflit local)", entry.getKey());
+                            LOGGER.debug("🔄 Timer distant ajouté au cache: {}", entry.getKey());
                         });
                 }
                 
-                // Mettre à jour le cache
-                cachedDimensionTimers.clear();
-                cachedDimensionTimers.putAll(result);
-                lastDimensionTimerUpdate = currentTime;
+                // Mettre à jour le cache de manière thread-safe avec protection
+                synchronized (cachedDimensionTimers) {
+                    // Garder copie de sécurité avant clear
+                    Map<String, DimensionTimer> backup = new HashMap<>(cachedDimensionTimers);
+                    
+                    try {
+                        cachedDimensionTimers.clear();
+                        cachedDimensionTimers.putAll(result);
+                        lastDimensionTimerUpdate = currentTime;
+                        LOGGER.debug("Cache mis à jour avec {} timers", result.size());
+                    } catch (Exception e) {
+                        // Restaurer backup en cas d'erreur
+                        cachedDimensionTimers.clear();
+                        cachedDimensionTimers.putAll(backup);
+                        LOGGER.warn("Erreur mise à jour cache, backup restauré: {}", e.getMessage());
+                    }
+                }
                 
                 return result;
                 
@@ -309,8 +350,15 @@ public class TimerSyncManager {
                     cachedDimensionTimers.clear();
                     lastDimensionTimerUpdate = System.currentTimeMillis();
                     
-                    LOGGER.info("✅ Données synchronisées: {} timers", 
-                        newData.getTimers() != null ? newData.getTimers().size() : 0);
+                    int timerCount = newData.getTimers() != null ? newData.getTimers().size() : 0;
+                    LOGGER.info("✅ Données synchronisées: {} timers", timerCount);
+                    
+                    // Log détaillé des timers pour debug
+                    if (newData.getTimers() != null) {
+                        for (String timerName : newData.getTimers().keySet()) {
+                            LOGGER.info("   📋 Timer distant: {}", timerName);
+                        }
+                    }
                     
                     // Forcer le rafraîchissement du cache de l'interface pour afficher immédiatement
                     try {
@@ -386,10 +434,37 @@ public class TimerSyncManager {
             
             if (response.statusCode() == 200) {
                 LOGGER.info("Timer {} synchronisé avec succès sur GitHub", dimensionName);
+                
+                // Invalider le cache local pour forcer re-téléchargement
+                lastFetch = Instant.ofEpochMilli(0);
+                
+                // Déclencher sync immédiate pour tous les utilisateurs
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Thread.sleep(1000); // Attendre 1s que GitHub propage
+                        fetchTimersFromRemote();
+                    } catch (Exception e) {
+                        LOGGER.debug("Erreur sync post-upload: {}", e.getMessage());
+                    }
+                });
+                
                 return true;
             } else {
                 LOGGER.warn("Échec upload timer {} - Status: {} - Body: {}", 
                     dimensionName, response.statusCode(), response.body());
+                
+                // Retry une fois après 2 secondes en cas d'échec serveur
+                if (response.statusCode() >= 500) { // Erreur serveur
+                    LOGGER.info("⚠️ Erreur serveur GitHub, retry dans 2s pour timer {}", dimensionName);
+                    try {
+                        Thread.sleep(2000);
+                        // Pas de retry recursif, juste logger pour diagnostic
+                        LOGGER.info("🔄 Retry automatique sera fait au prochain cycle de sync");
+                    } catch (Exception retryException) {
+                        LOGGER.warn("Erreur durant retry wait: {}", retryException.getMessage());
+                    }
+                }
+                
                 return false;
             }
             
@@ -470,9 +545,23 @@ public class TimerSyncManager {
         // Nettoyer les timers locaux expirés
         localTimers.entrySet().removeIf(entry -> entry.getValue().isExpired());
         
-        // Nettoyer les timers du cache distant expirés
-        if (cachedData != null && cachedData.getTimers() != null) {
-            cachedData.getTimers().entrySet().removeIf(entry -> entry.getValue().isExpired());
+        // NOTE: NE PAS nettoyer cachedData.getTimers() car c'est la copie des données serveur !
+        // Le filtrage des timers expirés se fait à la lecture dans getAllSyncedTimers()
+        
+        // Nettoyer seulement le cache local des DimensionTimer
+        if (!cachedDimensionTimers.isEmpty()) {
+            // Compter les timers expirés avant suppression
+            long expiredCount = cachedDimensionTimers.values().stream()
+                .filter(timer -> timer.isExpired())
+                .count();
+            
+            cachedDimensionTimers.entrySet().removeIf(entry -> entry.getValue().isExpired());
+            
+            // Si des timers ont expiré, invalider ETag pour forcer refresh à la prochaine sync
+            if (expiredCount > 0) {
+                LOGGER.debug("🗑️ {} timer(s) expiré(s) - Invalidation ETag pour détecter les nouveaux", expiredCount);
+                lastETag = ""; // Reset ETag pour forcer téléchargement
+            }
         }
     }
 
