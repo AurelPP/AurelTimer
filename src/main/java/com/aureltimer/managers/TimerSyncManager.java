@@ -27,7 +27,13 @@ import java.util.concurrent.TimeUnit;
 
 public class TimerSyncManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimerSyncManager.class);
-    private static final String SYNC_URL = "https://gist.githubusercontent.com/AurelPP/33163bd71cd0769f58c617fec115b690/raw/timer_sync.json";
+    private static final String SYNC_URL_BASE = "https://gist.githubusercontent.com/AurelPP/33163bd71cd0769f58c617fec115b690/raw/timer_sync.json";
+    
+    private String getSyncUrl() {
+        // Ajouter timestamp par tranche de 5 minutes pour équilibrer cache vs fraîcheur
+        long timestampBlock = (System.currentTimeMillis() / (5 * 60 * 1000)) * (5 * 60 * 1000);
+        return SYNC_URL_BASE + "?t=" + timestampBlock;
+    }
     private static final String UPDATE_URL = "https://api.github.com/gists/33163bd71cd0769f58c617fec115b690";
     
     // Token GitHub pour l'écriture (configuré pour la synchronisation globale)
@@ -139,11 +145,24 @@ public class TimerSyncManager {
                 String playerName = getPlayerName();
                 if (playerName == null) return false;
                 
-                // Calculer la phase prédite
-                String predictedPhase = TimeUtils.predictSpawnPhase(minutes, seconds).name().toLowerCase();
-                String predictedPhaseDisplay = TimeUtils.formatPhase(
-                    TimeUtils.predictSpawnPhase(minutes, seconds)
-                );
+                // Vérifier si un timer existant a déjà une phase prédite à préserver
+                SyncTimer existingTimer = localTimers.get(dimensionName);
+                String predictedPhase;
+                String predictedPhaseDisplay;
+                
+                if (existingTimer != null) {
+                    // Préserver la phase existante
+                    predictedPhase = existingTimer.getPredictedPhase();
+                    predictedPhaseDisplay = existingTimer.getPredictedPhaseDisplay();
+                    LOGGER.info("🔄 Préservation phase existante pour {}: {}", dimensionName, predictedPhase);
+                } else {
+                    // Nouveau timer - calculer la phase
+                    predictedPhase = TimeUtils.predictSpawnPhase(minutes, seconds).name().toLowerCase();
+                    predictedPhaseDisplay = TimeUtils.formatPhase(
+                        TimeUtils.predictSpawnPhase(minutes, seconds)
+                    );
+                    LOGGER.info("🆕 Nouvelle phase calculée pour {}: {}", dimensionName, predictedPhase);
+                }
                 
                 // Créer le timer de synchronisation
                 SyncTimer syncTimer = new SyncTimer(
@@ -185,7 +204,7 @@ public class TimerSyncManager {
                     lastDimensionTimerUpdate = System.currentTimeMillis();
                 }
                 
-                // Vérifier si le cache des DimensionTimer est encore valide (60 secondes)
+                // Vérifier si le cache des DimensionTimer est encore valide (60 secondes pour quota GitHub)
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastDimensionTimerUpdate < 60000 && !cachedDimensionTimers.isEmpty()) {
                     // Filtrer les timers expirés du cache
@@ -204,14 +223,8 @@ public class TimerSyncManager {
                 // Reconstruire le cache des DimensionTimer
                 Map<String, DimensionTimer> result = new HashMap<>();
                 
-                // PRIORITÉ LOCALE : D'abord les timers locaux (priorité absolue)
-                localTimers.entrySet().stream()
-                    .filter(entry -> !entry.getValue().isExpired())
-                    .forEach(entry -> {
-                        DimensionTimer timer = entry.getValue().toDimensionTimer(entry.getKey());
-                        result.put(entry.getKey(), timer);
-                        LOGGER.debug("Timer local prioritaire: {}", entry.getKey());
-                    });
+                // Note: Les vrais timers locaux sont gérés par TimerManager.getAllTimers()
+                // Ici on ne gère que les timers distants depuis le Gist
                 
                 // Puis ajouter les timers distants SEULEMENT si pas de timer local pour cette dimension
                 if (isAuthorized() && cachedData != null && cachedData.getTimers() != null) {
@@ -249,11 +262,15 @@ public class TimerSyncManager {
     }
 
     private void fetchTimersFromRemote() {
-        LOGGER.info("📥 Tentative de téléchargement depuis: {}", SYNC_URL);
+        String syncUrl = getSyncUrl();
+        LOGGER.info("📥 Tentative de téléchargement depuis: {}", syncUrl);
         try {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(SYNC_URL))
+                .uri(URI.create(syncUrl))
                 .timeout(Duration.ofSeconds(10))
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
                 .GET();
             
             // Ajouter ETag pour éviter les téléchargements inutiles
@@ -266,13 +283,15 @@ public class TimerSyncManager {
                 HttpResponse.BodyHandlers.ofString());
             
             if (response.statusCode() == 304) {
-                // Pas de modifications
+                // Pas de modifications selon l'ETag
+                LOGGER.debug("📋 HTTP 304 - Pas de modifications depuis la dernière sync");
                 lastFetch = Instant.now();
                 return;
             }
             
             LOGGER.info("📡 Réponse HTTP: {} - Taille: {} bytes", 
                 response.statusCode(), response.body().length());
+            LOGGER.debug("📄 Contenu JSON brut (500 premiers chars): {}", response.body().substring(0, Math.min(500, response.body().length())));
             
             if (response.statusCode() == 200) {
                 String newETag = response.headers().firstValue("ETag").orElse("");
@@ -280,12 +299,28 @@ public class TimerSyncManager {
                 lastFetch = Instant.now();
                 
                 TimerSyncData newData = gson.fromJson(response.body(), TimerSyncData.class);
+
                 if (newData != null) {
                     // La vérification d'autorisation se fait via WhitelistManager séparément
                     cachedData = newData;
                     cleanupExpiredTimers();
+                    
+                    // Vider le cache des DimensionTimer pour forcer la reconversion
+                    cachedDimensionTimers.clear();
+                    lastDimensionTimerUpdate = System.currentTimeMillis();
+                    
                     LOGGER.info("✅ Données synchronisées: {} timers", 
                         newData.getTimers() != null ? newData.getTimers().size() : 0);
+                    
+                    // Forcer le rafraîchissement du cache de l'interface pour afficher immédiatement
+                    try {
+                        com.aureltimer.AurelTimerMod.getTimerOverlay().refreshCache();
+                        LOGGER.debug("🔄 Cache interface rafraîchi après sync");
+                    } catch (Exception e) {
+                        LOGGER.warn("Erreur rafraîchissement cache interface: {}", e.getMessage());
+                    }
+                } else {
+                    LOGGER.debug("📋 JSON parsé mais newData == null");
                 }
             } else {
                 LOGGER.warn("❌ Échec du téléchargement - Status: {}", response.statusCode());
@@ -519,14 +554,8 @@ public class TimerSyncManager {
             if (totalSeconds > 60) {
                 int delaySeconds = totalSeconds - 60;
                 
-                scheduler.schedule(() -> {
-                    try {
-                        com.aureltimer.utils.AlertUtils.showSpawnAlert(dimensionName);
-                        LOGGER.info("Alerte programmée exécutée pour timer synchronisé: {}", dimensionName);
-                    } catch (Exception e) {
-                        LOGGER.error("Erreur lors de l'exécution de l'alerte: {}", e.getMessage());
-                    }
-                }, delaySeconds, TimeUnit.SECONDS);
+                // Utiliser le scheduler unifié pour éviter les doublons
+                com.aureltimer.utils.AlertScheduler.scheduleUniqueAlert(dimensionName, delaySeconds);
                 
                 LOGGER.debug("Alerte programmée pour timer synchronisé {} dans {}s", dimensionName, delaySeconds);
             }

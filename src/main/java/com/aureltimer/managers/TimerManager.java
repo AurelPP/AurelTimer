@@ -24,9 +24,44 @@ public class TimerManager {
     
     public void updateTimer(String dimensionName, int minutes, int seconds) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime spawnTime = now.plusMinutes(minutes).plusSeconds(seconds);
+        LocalDateTime newSpawnTime = now.plusMinutes(minutes).plusSeconds(seconds);
         
-        DimensionTimer timer = new DimensionTimer(dimensionName, minutes, seconds, spawnTime);
+        // Vérifier si un timer existe déjà (local ou distant)
+        Map<String, DimensionTimer> allExistingTimers = getAllTimers();
+        DimensionTimer existingTimer = allExistingTimers.get(dimensionName);
+        
+        DimensionTimer timer;
+        if (existingTimer != null && !existingTimer.isExpired()) {
+            // Timer existant encore valide - vérifier si c'est une mise à jour mineure
+            long existingRemainingSeconds = existingTimer.getSecondsRemaining();
+            long newTotalSeconds = minutes * 60L + seconds;
+            
+            // Si la différence est petite (< 30 secondes), probablement une mise à jour du même timer
+            if (Math.abs(existingRemainingSeconds - newTotalSeconds) < 30) {
+                LOGGER.info("Timer {} existe déjà avec progression similaire - préservation COMPLÈTE", dimensionName);
+                LOGGER.info("Existant: {}min {}s restants, Nouveau: {}min {}s → Préservation", 
+                    existingRemainingSeconds / 60, existingRemainingSeconds % 60, minutes, seconds);
+                
+                // Créer un nouveau timer qui préserve TOUT : durée originale, progression, phase ET createdAt
+                timer = new DimensionTimer(
+                    dimensionName, 
+                    existingTimer.getInitialMinutes(),  // ✅ Préserver durée originale
+                    existingTimer.getInitialSeconds(),  // ✅ Préserver durée originale  
+                    existingTimer.getSpawnTime(), 
+                    existingTimer.getPredictedPhase(),
+                    existingTimer.getCreatedAt()
+                );
+            } else {
+                LOGGER.info("Timer {} mis à jour avec nouveau temps - reset progression", dimensionName);
+                // Nouveau timer complètement différent
+                timer = new DimensionTimer(dimensionName, minutes, seconds, newSpawnTime);
+            }
+        } else {
+            // Nouveau timer ou timer expiré
+            LOGGER.info("Nouveau timer créé pour {}: {} minutes et {} secondes", dimensionName, minutes, seconds);
+            timer = new DimensionTimer(dimensionName, minutes, seconds, newSpawnTime);
+        }
+        
         dimensionTimers.put(dimensionName, timer);
         
         // Forcer le refresh immédiat du cache de l'overlay pour éviter le retard d'affichage
@@ -45,6 +80,15 @@ public class TimerManager {
                 .thenAccept(success -> {
                     if (success) {
                         LOGGER.info("Timer {} synchronisé avec succès", dimensionName);
+                        // Forcer refresh du cache après sync réussie
+                        try {
+                            com.aureltimer.gui.TimerOverlay overlay = com.aureltimer.AurelTimerMod.getTimerOverlay();
+                            if (overlay != null) {
+                                overlay.refreshCache();
+                            }
+                        } catch (Exception e) {
+                            // Ignorer silencieusement
+                        }
                     } else {
                         LOGGER.warn("Échec de la synchronisation du timer {}", dimensionName);
                     }
@@ -87,16 +131,17 @@ public class TimerManager {
         // Ajouter les timers synchronisés si la sync est activée (asynchrone pour éviter les blocages)
         if (syncManager.isSyncEnabled() && syncManager.isAuthorized()) {
             try {
-                // Utiliser un timeout court pour éviter les blocages
+                // Utiliser un timeout raisonnable pour éviter les blocages tout en permettant la sync
                 Map<String, DimensionTimer> syncedTimers = syncManager.getAllSyncedTimers()
-                    .orTimeout(100, TimeUnit.MILLISECONDS) // Timeout de 100ms
+                    .orTimeout(2000, TimeUnit.MILLISECONDS) // Timeout de 2 secondes
                     .exceptionally(throwable -> {
                         // En cas d'erreur ou timeout, retourner map vide
+                        LOGGER.warn("Timeout/erreur récupération timers synchronisés: {}", throwable.getMessage());
                         return new HashMap<>();
                     })
                     .get();
                 
-                // Fusionner les timers (priorité aux locaux en cas de conflit)
+                // Fusionner les timers (priorité absolue aux locaux en cas de conflit)
                 for (Map.Entry<String, DimensionTimer> entry : syncedTimers.entrySet()) {
                     if (!allTimers.containsKey(entry.getKey())) {
                         allTimers.put(entry.getKey(), entry.getValue());

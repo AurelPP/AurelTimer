@@ -28,9 +28,7 @@ public class DimensionDetectionMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("DimensionDetectionMixin");
     private final HomeTracker homeTracker = new HomeTracker();
     
-    // Tracker pour éviter le spam d'alertes
-    private static final Set<String> scheduledAlerts = ConcurrentHashMap.newKeySet();
-    private static long lastCleanup = System.currentTimeMillis();
+    // Supprimé : maintenant géré par AlertScheduler global
     
     // Pattern pour extraire le temps des messages de spawn légendaire
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)\\s+minutes?\\s+et\\s+(\\d+)\\s+secondes?");
@@ -133,8 +131,19 @@ public class DimensionDetectionMixin {
                         AurelTimerMod.getTimerManager().updateTimer(dimensionName, timeString);
                         LOGGER.info("⏰ Timer créé pour {}: {}", dimensionName, timeString);
                         
-                        // Programmer l'alerte à 1 minute
-                        scheduleAlertCheck(dimensionName, timeString);
+                        // Programmer l'alerte à 1 minute (système unifié)
+                        try {
+                            int minutes = Integer.parseInt(timeString.split(" ")[0]);
+                            int seconds = Integer.parseInt(timeString.split(" ")[3]); // Index 3 pour "Y" dans "X minutes et Y secondes"
+                            int totalSeconds = minutes * 60 + seconds;
+                            
+                            if (totalSeconds > 60) {
+                                int delaySeconds = totalSeconds - 60;
+                                com.aureltimer.utils.AlertScheduler.scheduleUniqueAlert(dimensionName, delaySeconds);
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error("Erreur parsing pour alerte: {}", e.getMessage());
+                        }
                     } else {
                         LOGGER.error("❌ ERREUR: La dimension détectée '{}' semble être un timer au lieu d'un nom de dimension!", dimensionName);
                     }
@@ -155,60 +164,6 @@ public class DimensionDetectionMixin {
             return minutes + " minutes et " + seconds + " secondes";
         }
         return null;
-    }
-    
-    private void scheduleAlertCheck(String dimensionName, String timeString) {
-        try {
-            // Nettoyage périodique (toutes les 5 minutes)
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastCleanup > 300000) { // 5 minutes
-                scheduledAlerts.clear();
-                lastCleanup = currentTime;
-                LOGGER.debug("Nettoyage périodique des alertes programmées");
-            }
-            
-            // Créer une clé unique pour cette alerte (dimension + temps approximatif)
-            String alertKey = dimensionName + "_" + timeString;
-            
-            // Vérifier si une alerte est déjà programmée pour cette dimension/temps
-            if (scheduledAlerts.contains(alertKey)) {
-                LOGGER.debug("Alerte déjà programmée pour {}, ignorée", dimensionName);
-                return;
-            }
-            
-            // Extraire le temps total en secondes
-            Matcher matcher = TIME_PATTERN.matcher(timeString);
-            if (matcher.find()) {
-                int minutes = Integer.parseInt(matcher.group(1));
-                int seconds = Integer.parseInt(matcher.group(2));
-                int totalSeconds = minutes * 60 + seconds;
-                
-                // Programmer l'alerte à 1 minute restante
-                if (totalSeconds > 60) {
-                    int delaySeconds = totalSeconds - 60;
-                    
-                    // Marquer cette alerte comme programmée
-                    scheduledAlerts.add(alertKey);
-                    
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(delaySeconds * 1000L);
-                            showSpawnAlert(dimensionName);
-                            
-                            // Nettoyer après l'alerte
-                            scheduledAlerts.remove(alertKey);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            scheduledAlerts.remove(alertKey);
-                        }
-                    }).start();
-                    
-                    LOGGER.info("⏰ Alerte programmée pour {} dans {} secondes", dimensionName, delaySeconds);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("Erreur lors de la programmation de l'alerte: {}", e.getMessage());
-        }
     }
     
     private void showSpawnAlert(String dimensionName) {

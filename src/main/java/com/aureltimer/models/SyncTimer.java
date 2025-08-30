@@ -85,8 +85,17 @@ public class SyncTimer {
         int originalMinutes = (int) (initialDurationSeconds / 60);
         int originalSeconds = (int) (initialDurationSeconds % 60);
         
+        // Récupérer la phase prédite stockée (sans recalculer !)
+        com.aureltimer.utils.TimeUtils.DayPhase storedPhase;
+        try {
+            storedPhase = com.aureltimer.utils.TimeUtils.DayPhase.valueOf(predictedPhase.toUpperCase());
+        } catch (Exception e) {
+            // Fallback si la phase n'est pas valide
+            storedPhase = com.aureltimer.utils.TimeUtils.predictSpawnPhase(originalMinutes, originalSeconds);
+        }
+        
         com.aureltimer.models.DimensionTimer timer = new com.aureltimer.models.DimensionTimer(
-            dimensionName, originalMinutes, originalSeconds, spawnTime
+            dimensionName, originalMinutes, originalSeconds, spawnTime, storedPhase
         );
         
         return timer;

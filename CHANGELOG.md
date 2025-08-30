@@ -7,17 +7,23 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [1.4.1] - 2025-08-30
 
-### 🔧 Corrigé
-- **Fix alertes timers JSON** : Les timers récupérés du serveur déclenchent maintenant les alertes à 1 minute
-- **Fix affichage instantané** : Les nouveaux timers apparaissent immédiatement dans l'interface (plus de retard debounce)
-- **Fix drag & drop interface** : L'interface n'interfère plus avec les menus Minecraft
-- **Support chat ouvert** : Possibilité de déplacer l'interface quand le chat est ouvert
-- **Fix crash Mixin** : Correction de l'erreur "non-private static method" au démarrage
+### 🐛 Correctifs Critiques
+- **Fix timeout synchronisation** : Correction du timeout 100ms → 2s qui causait la perte des timers synchronisés
+- **Fix erreur parsing alertes** : Correction de l'erreur "For input string: secondes" lors de la programmation d'alertes
+- **Fix cache CDN GitHub** : Bypass du cache CDN pour détecter les modifications en temps réel
+- **Fix barres de progression** : Préservation des durées initiales lors des mises à jour de timers
+- **Fix disparition timers** : Les timers ne disparaissent plus temporairement de l'interface
+- **Fix drag & drop chat** : Interface déplaçable même avec le chat ouvert
 
-### 🎨 Amélioré
-- **Optimisation cache** : Refresh automatique du cache overlay pour un affichage réactif
-- **Logique drag & drop** : Détection intelligente des écrans compatibles avec le déplacement
-- **Architecture code** : Séparation des responsabilités avec classe utilitaire AlertUtils
+### ⚡ Optimisations
+- **Cache intelligent** : Système ETag + timestamp pour économiser le quota GitHub API
+- **Headers anti-cache** : Force la fraîcheur des données quand nécessaire
+- **Logs nettoyés** : Suppression des messages de debug temporaires
+
+### 🔧 Améliorations Techniques  
+- **Timeout adaptatif** : 2 secondes pour les opérations asynchrones critiques
+- **Gestion d'erreurs robuste** : Logs détaillés pour diagnostiquer les problèmes de sync
+- **Performance réseau** : Équilibre optimal entre réactivité et quota API
 
 ## [1.4.0] - 2025-08-27
 

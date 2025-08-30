@@ -22,6 +22,30 @@ public class DimensionTimer {
         this.predictedPhase = TimeUtils.predictSpawnPhase(minutes, seconds);
     }
     
+    /**
+     * Constructeur avec phase prédite spécifiée (pour préserver la phase lors des mises à jour)
+     */
+    public DimensionTimer(String dimensionName, int minutes, int seconds, LocalDateTime spawnTime, TimeUtils.DayPhase predictedPhase) {
+        this.dimensionName = dimensionName;
+        this.initialMinutes = minutes;
+        this.initialSeconds = seconds;
+        this.spawnTime = spawnTime;
+        this.createdAt = LocalDateTime.now();
+        this.predictedPhase = predictedPhase; // Phase fixée
+    }
+    
+    /**
+     * Constructeur complet pour préserver TOUS les aspects d'un timer existant
+     */
+    public DimensionTimer(String dimensionName, int minutes, int seconds, LocalDateTime spawnTime, TimeUtils.DayPhase predictedPhase, LocalDateTime createdAt) {
+        this.dimensionName = dimensionName;
+        this.initialMinutes = minutes;
+        this.initialSeconds = seconds;
+        this.spawnTime = spawnTime;
+        this.createdAt = createdAt; // Préservé !
+        this.predictedPhase = predictedPhase; // Phase fixée
+    }
+    
     public String getDimensionName() {
         return dimensionName;
     }
