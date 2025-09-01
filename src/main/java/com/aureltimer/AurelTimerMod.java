@@ -79,9 +79,17 @@ public class AurelTimerMod implements ClientModInitializer {
         // Synchronisation lors de la connexion au serveur
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             LOGGER.info("Connexion au serveur détectée - synchronisation des timers...");
-            if (timerManager != null && timerManager.isSyncEnabled() && timerManager.isSyncAuthorized()) {
-                // Forcer une synchronisation immédiate
-                timerManager.getSyncManager().forceSyncNow();
+            if (timerManager != null && timerManager.isSyncEnabled()) {
+                // La sync se fera automatiquement avec le nouveau système
+                LOGGER.info("✅ Sync automatique activée pour la connexion serveur");
+            }
+        });
+
+        // ✅ ARRÊT PROPRE lors de la déconnexion
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            LOGGER.info("🛑 Déconnexion détectée - arrêt propre des managers");
+            if (timerManager != null) {
+                timerManager.close();
             }
         });
 

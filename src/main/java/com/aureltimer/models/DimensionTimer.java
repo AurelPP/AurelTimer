@@ -1,118 +1,229 @@
 package com.aureltimer.models;
 
 import com.aureltimer.utils.TimeUtils;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
-public class DimensionTimer {
-    private final String dimensionName;
-    private final int initialMinutes;
-    private final int initialSeconds;
-    private final LocalDateTime spawnTime;
-    private final LocalDateTime createdAt;
-    private final TimeUtils.DayPhase predictedPhase;
+/**
+ * DimensionTimer - Couche UI/Display pour timers
+ * 
+ * RESPONSABILITÉ UNIQUE : Présentation et compatibilité UI
+ * - Wrappeur autour de TimerData
+ * - Méthodes de formatage pour l'affichage
+ * - Compatibilité avec l'ancienne API
+ * 
+ * DESIGN PATTERN : Adapter/Facade
+ * - Cache un TimerData en interne
+ * - Expose l'ancienne interface publique
+ * - Toute la logique est déléguée à TimerData
+ */
+public final class DimensionTimer {
     
-    public DimensionTimer(String dimensionName, int minutes, int seconds, LocalDateTime spawnTime) {
-        this.dimensionName = dimensionName;
-        this.initialMinutes = minutes;
-        this.initialSeconds = seconds;
-        this.spawnTime = spawnTime;
-        this.createdAt = LocalDateTime.now();
-        // Prédire la phase du jour au moment du spawn
-        this.predictedPhase = TimeUtils.predictSpawnPhase(minutes, seconds);
+    // === DONNÉES CORE ===
+    private final TimerData timerData;  // Délégation vers modèle de données pur
+    
+    // === CONSTRUCTEURS ===
+    
+    /**
+     * Constructeur principal - Wrapping de TimerData
+     */
+    public DimensionTimer(TimerData timerData) {
+        this.timerData = timerData;
     }
     
     /**
-     * Constructeur avec phase prédite spécifiée (pour préserver la phase lors des mises à jour)
+     * Constructeur depuis composants (pour compatibilité)
      */
-    public DimensionTimer(String dimensionName, int minutes, int seconds, LocalDateTime spawnTime, TimeUtils.DayPhase predictedPhase) {
-        this.dimensionName = dimensionName;
-        this.initialMinutes = minutes;
-        this.initialSeconds = seconds;
-        this.spawnTime = spawnTime;
-        this.createdAt = LocalDateTime.now();
-        this.predictedPhase = predictedPhase; // Phase fixée
+    public DimensionTimer(String dimensionName, java.time.Instant expiresAtUtc, 
+                         java.time.Duration initialDuration, TimeUtils.DayPhase predictedPhase, 
+                         java.time.Instant createdAtUtc, String createdBy) {
+        this.timerData = new TimerData(dimensionName, expiresAtUtc, initialDuration,
+                                     predictedPhase, createdAtUtc, createdBy);
     }
     
     /**
-     * Constructeur complet pour préserver TOUS les aspects d'un timer existant
+     * Factory depuis durée (recommandé)
      */
-    public DimensionTimer(String dimensionName, int minutes, int seconds, LocalDateTime spawnTime, TimeUtils.DayPhase predictedPhase, LocalDateTime createdAt) {
-        this.dimensionName = dimensionName;
-        this.initialMinutes = minutes;
-        this.initialSeconds = seconds;
-        this.spawnTime = spawnTime;
-        this.createdAt = createdAt; // Préservé !
-        this.predictedPhase = predictedPhase; // Phase fixée
-    }
-    
-    public String getDimensionName() {
-        return dimensionName;
+    public static DimensionTimer createFromDuration(String dimensionName, java.time.Duration duration,
+                                                   String createdBy) {
+        TimerData data = TimerData.createFromDuration(dimensionName, duration, createdBy);
+        return new DimensionTimer(data);
     }
     
     /**
-     * Récupère la phase prédite du jour au moment du spawn
+     * Factory depuis minutes/secondes (compatibilité)
      */
-    public TimeUtils.DayPhase getPredictedPhase() {
-        return predictedPhase;
+    public static DimensionTimer createFromMinutesSeconds(String dimensionName, int minutes, 
+                                                        int seconds, String createdBy) {
+        TimerData data = TimerData.createFromMinutesSeconds(dimensionName, minutes, seconds, createdBy);
+        return new DimensionTimer(data);
     }
+    
+    // === CONSTRUCTEURS DE COMPATIBILITÉ (dépréciés) ===
+    
+    @Deprecated
+    public DimensionTimer(String dimensionName, int minutes, int seconds, 
+                         java.time.LocalDateTime spawnTime) {
+        this.timerData = TimerData.createFromMinutesSeconds(dimensionName, minutes, seconds, "local");
+    }
+    
+    @Deprecated
+    public DimensionTimer(String dimensionName, int minutes, int seconds,
+                         java.time.LocalDateTime spawnTime, TimeUtils.DayPhase predictedPhase,
+                         java.time.LocalDateTime createdAt) {
+        this.timerData = TimerData.createFromMinutesSeconds(dimensionName, minutes, seconds, "local");
+    }
+    
+    // === MÉTHODES UI/DISPLAY ===
     
     /**
-     * Récupère le nom de la dimension avec la phase prédite
-     * Format: "Ressource2 - Midi (6h-12h)"
+     * Formatage du temps restant pour affichage
      */
-    public String getDimensionNameWithPhase() {
-        return dimensionName + " - " + TimeUtils.formatPhase(predictedPhase);
-    }
-    
-    public int getInitialMinutes() {
-        return initialMinutes;
-    }
-    
-    public int getInitialSeconds() {
-        return initialSeconds;
-    }
-    
-    public LocalDateTime getSpawnTime() {
-        return spawnTime;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public String getFormattedTimeRemaining() {
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(spawnTime)) {
-            return "Terminé";
-        }
+    public String getDisplayText() {
+        long seconds = timerData.getSecondsRemaining();
+        if (seconds <= 0) return "Expiré";
         
-        long totalSeconds = java.time.Duration.between(now, spawnTime).getSeconds();
-        long minutes = totalSeconds / 60;
-        long seconds = totalSeconds % 60;
+        long minutes = seconds / 60;
+        long remainingSeconds = seconds % 60;
         
         if (minutes > 0) {
-            return String.format("%dm %ds", minutes, seconds);
+            return String.format("%dm %ds", minutes, remainingSeconds);
         } else {
-            return String.format("%ds", seconds);
+            return String.format("%ds", remainingSeconds);
         }
     }
     
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(spawnTime);
+    /**
+     * Affichage complet avec phase prédite
+     */
+    public String getFullDisplayText() {
+        String timeText = getDisplayText();
+        if (timerData.getPredictedPhase() != null) {
+            String phaseDisplay = TimeUtils.getPhaseDisplay(timerData.getPredictedPhase());
+            return timeText + " - " + phaseDisplay;
+        }
+        return timeText;
+    }
+    
+    /**
+     * Formatage temps restant pour compatibilité UI
+     */
+    public String getFormattedTimeRemaining() {
+        return getDisplayText();
+    }
+    
+    /**
+     * Nom dimension avec phase pour compatibilité UI
+     */
+    public String getDimensionNameWithPhase() {
+        String phaseDisplay = TimeUtils.getPhaseDisplay(timerData.getPredictedPhase());
+        return timerData.getDimensionName() + " - " + phaseDisplay;
+    }
+    
+    // === DÉLÉGATION VERS TimerData ===
+    
+    public String getDimensionName() {
+        return timerData.getDimensionName();
     }
     
     public long getSecondsRemaining() {
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(spawnTime)) {
-            return 0;
-        }
-        return java.time.Duration.between(now, spawnTime).getSeconds();
+        return timerData.getSecondsRemaining();
+    }
+    
+    public java.time.Duration getTimeRemaining() {
+        return timerData.getTimeRemaining();
+    }
+    
+    public boolean isExpired() {
+        return timerData.isExpired();
+    }
+    
+    public double getProgressPercentage() {
+        return timerData.getProgressPercentage();
+    }
+    
+    public TimeUtils.DayPhase getPredictedPhase() {
+        return timerData.getPredictedPhase();
+    }
+    
+    public java.time.Instant getExpiresAtUtc() {
+        return timerData.getExpiresAtUtc();
+    }
+    
+    public java.time.Duration getInitialDuration() {
+        return timerData.getInitialDuration();
+    }
+    
+    public java.time.Instant getCreatedAtUtc() {
+        return timerData.getCreatedAtUtc();
+    }
+    
+    public String getCreatedBy() {
+        return timerData.getCreatedBy();
+    }
+    
+    // === ACCÈS AU MODÈLE DE DONNÉES ===
+    
+    /**
+     * Accès direct au TimerData (pour convertisseurs)
+     */
+    public TimerData getTimerData() {
+        return timerData;
+    }
+    
+    // === MÉTHODES DE COMPATIBILITÉ (dépréciées) ===
+    
+    @Deprecated
+    public int getInitialMinutes() {
+        return (int) timerData.getInitialDuration().toMinutes();
+    }
+    
+    @Deprecated
+    public int getInitialSeconds() {
+        return (int) (timerData.getInitialDuration().getSeconds() % 60);
+    }
+    
+    @Deprecated
+    public java.time.LocalDateTime getSpawnTime() {
+        // Conversion approximative pour compatibilité
+        return java.time.LocalDateTime.now().plusSeconds(getSecondsRemaining());
+    }
+    
+    @Deprecated
+    public java.time.LocalDateTime getCreatedAt() {
+        // Conversion approximative pour compatibilité
+        return java.time.LocalDateTime.now();
+    }
+    
+    @Deprecated
+    public int getMinutesRemaining() {
+        return (int) (getSecondsRemaining() / 60);
+    }
+    
+    // === COMPARAISON ET HASH ===
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        
+        DimensionTimer other = (DimensionTimer) obj;
+        return timerData.equals(other.timerData);
+    }
+    
+    @Override
+    public int hashCode() {
+        return timerData.hashCode();
     }
     
     @Override
     public String toString() {
-        return String.format("DimensionTimer{dimension='%s', timeRemaining='%s'}", 
-            dimensionName, getFormattedTimeRemaining());
+        return String.format("DimensionTimer{dimension='%s', remaining='%s', phase='%s'}",
+                getDimensionName(), getDisplayText(), getPredictedPhase());
+    }
+    
+    /**
+     * Informations de debug détaillées
+     */
+    public String getDebugInfo() {
+        return "DimensionTimer{" + timerData.getDebugInfo() + "}";
     }
 }

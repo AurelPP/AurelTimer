@@ -2,6 +2,7 @@ package com.aureltimer.models;
 
 import java.time.Instant;
 import java.time.Duration;
+import com.aureltimer.utils.TimeAuthority;
 
 public class SyncTimer {
     private String expiresAt;
@@ -16,7 +17,7 @@ public class SyncTimer {
 
     public SyncTimer(String dimension, int minutes, int seconds, String createdBy, 
                      String predictedPhase, String predictedPhaseDisplay) {
-        Instant now = Instant.now();
+        Instant now = TimeAuthority.getInstance().now();
         this.expiresAt = now.plusSeconds(minutes * 60L + seconds).toString();
         this.createdBy = createdBy;
         this.createdAt = now.toString();
@@ -29,7 +30,7 @@ public class SyncTimer {
     public Duration getTimeRemaining() {
         try {
             Instant expiry = Instant.parse(expiresAt);
-            Instant now = Instant.now();
+            Instant now = TimeAuthority.getInstance().now();
             Duration remaining = Duration.between(now, expiry);
             return remaining.isNegative() ? Duration.ZERO : remaining;
         } catch (Exception e) {
@@ -39,7 +40,7 @@ public class SyncTimer {
 
     public boolean isExpired() {
         try {
-            Instant now = Instant.now();
+            Instant now = TimeAuthority.getInstance().now();
             Instant expiry = Instant.parse(expiresAt);
             boolean expired = now.isAfter(expiry);
             
@@ -77,35 +78,53 @@ public class SyncTimer {
         return (int) getTimeRemaining().toMinutes();
     }
 
-    // Conversion vers DimensionTimer existant
+    // Conversion vers DimensionTimer serveur-autoritaire
     public com.aureltimer.models.DimensionTimer toDimensionTimer(String dimensionName) {
-        Duration remaining = getTimeRemaining();
-        int minutesRemaining = (int) remaining.toMinutes();
-        int secondsRemaining = (int) (remaining.getSeconds() % 60);
+        // Parse de l'heure d'expiration UTC (source de vérité)
+        Instant expiresAtUtc;
+        try {
+            expiresAtUtc = Instant.parse(expiresAt);
+        } catch (Exception e) {
+            // Fallback si parsing échoue
+            expiresAtUtc = TimeAuthority.getInstance().now().plusSeconds(initialDurationSeconds);
+        }
         
-        // Calculer le spawnTime basé sur le temps restant
-        java.time.LocalDateTime spawnTime = java.time.LocalDateTime.now()
-            .plusMinutes(minutesRemaining)
-            .plusSeconds(secondsRemaining);
+        // Parse de l'heure de création UTC
+        Instant createdAtUtc;
+        try {
+            createdAtUtc = Instant.parse(createdAt);
+        } catch (Exception e) {
+            // Fallback si parsing échoue
+            createdAtUtc = TimeAuthority.getInstance().now().minus(
+                java.time.Duration.ofSeconds(initialDurationSeconds)
+            );
+        }
         
-        // Utiliser la durée ORIGINALE pour la barre de progression (pas le temps restant)
-        int originalMinutes = (int) (initialDurationSeconds / 60);
-        int originalSeconds = (int) (initialDurationSeconds % 60);
+        // Durée initiale
+        java.time.Duration initialDuration = java.time.Duration.ofSeconds(initialDurationSeconds);
         
-        // Récupérer la phase prédite stockée (sans recalculer !)
+        // Phase prédite stockée (sans recalculer !)
         com.aureltimer.utils.TimeUtils.DayPhase storedPhase;
         try {
             storedPhase = com.aureltimer.utils.TimeUtils.DayPhase.valueOf(predictedPhase.toUpperCase());
         } catch (Exception e) {
             // Fallback si la phase n'est pas valide
+            int originalMinutes = (int) (initialDurationSeconds / 60);
+            int originalSeconds = (int) (initialDurationSeconds % 60);
             storedPhase = com.aureltimer.utils.TimeUtils.predictSpawnPhase(originalMinutes, originalSeconds);
         }
         
-        com.aureltimer.models.DimensionTimer timer = new com.aureltimer.models.DimensionTimer(
-            dimensionName, originalMinutes, originalSeconds, spawnTime, storedPhase
+        // Création du TimerData puis wrapping en DimensionTimer
+        com.aureltimer.models.TimerData timerData = new com.aureltimer.models.TimerData(
+            dimensionName,
+            expiresAtUtc,      // Source de vérité temporelle
+            initialDuration,   // Durée originale
+            storedPhase,       // Phase pré-calculée
+            createdAtUtc,      // Timestamp création
+            createdBy != null ? createdBy : "unknown"  // Créateur
         );
         
-        return timer;
+        return new com.aureltimer.models.DimensionTimer(timerData);
     }
 
     // Getters et Setters

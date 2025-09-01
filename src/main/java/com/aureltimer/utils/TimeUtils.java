@@ -147,4 +147,23 @@ public class TimeUtils {
         
         return String.format("%02d:%02d", hours, minutes);
     }
+    
+    /**
+     * Retourne l'affichage user-friendly d'une phase
+     */
+    public static String getPhaseDisplay(DayPhase phase) {
+        if (phase == null) return "Inconnu";
+        
+        switch (phase) {
+            case DAWN: return "Aube (05:00-05:59)";
+            case MORNING: return "Matin (06:00-10:59)";
+            case NOON: return "Midi (11:00-12:59)";
+            case AFTERNOON: return "Après-midi (13:00-17:59)";
+            case DAY: return "Jour (06:00-17:59)";
+            case DUSK: return "Crépuscule (18:00-18:59)";
+            case NIGHT: return "Nuit (19:00-04:59)";
+            case MIDNIGHT: return "Minuit (23:00-00:59)";
+            default: return phase.name();
+        }
+    }
 }

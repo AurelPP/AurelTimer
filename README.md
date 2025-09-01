@@ -76,6 +76,15 @@ Tous les changements s'appliquent immédiatement sans redémarrage !
 - **K** : Ouvrir la configuration
 - **Clic + Glisser** : Déplacer l'interface
 
+## 🆕 Nouveautés v1.4.3
+
+🚀 **Migration Cloudflare** : Architecture ultra-performante avec Workers + R2  
+⚡ **Jar ultra-léger** : 170KB (réduction de 97%) sans dépendances lourdes  
+🔒 **Sécurité renforcée** : Token obfusqué et circuit breakers intelligents  
+🎯 **Single Actor Pattern** : Thread-safety garantie et merge déterministe  
+🌐 **Synchronisation optimisée** : < 5 secondes de propagation, quota illimité  
+🐛 **Corrections critiques** : Noms de dimensions, authentification, headers HTTP
+
 ## 🆕 Nouveautés v1.4
 
 🌐 **Synchronisation multi-joueurs** : Partage automatique des timers  

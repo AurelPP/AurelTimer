@@ -58,10 +58,7 @@ public class DimensionDetectionMixin {
         if (message.contains("PGHUD") || message.contains("&f裁")) {
             String dimensionName = extractDimensionFromHudMessage(message);
             if (dimensionName != null) {
-                // Gestion spéciale pour "Dimensions" (Nether/End)
-                if ("Dimensions".equals(dimensionName)) {
-                    dimensionName = getVanillaDimensionName();
-                }
+                // ✅ GARDE "Dimensions" tel quel (pas de conversion vanilla)
                 
                 homeTracker.setLastHome(dimensionName);
             }
