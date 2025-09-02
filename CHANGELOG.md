@@ -5,13 +5,22 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.4.5] - 2025-01-28
+## [1.4.5] - 2025-01-27
 
-### 🐛 Corrections
-- **Bug critique corrigé** : Les timers synchronisés déclenchent maintenant des alertes
-- **Problème identifié** : Les timers reçus par synchronisation n'activaient pas le système d'alerte
-- **Solution implémentée** : Programmation automatique d'alerte pour tous les timers synchronisés
-- **Comportement uniforme** : Alertes garanties 1 minute avant expiration pour tous les timers
+### 🐛 Corrections Critiques
+- **🔔 Alertes unifiées** : Correction majeure - les timers synchronisés déclenchent maintenant les alertes
+- **🎯 Système d'alerte complet** : Tous les timers (chat, sync, local) programment automatiquement une alerte
+- **📱 Interface optimisée** : Espacement parfait entre les contrôles de configuration
+- **🎵 Volume sonore** : Bouton "Play" dédié pour tester le son d'enclume sans spam
+
+### 🔧 Améliorations Interface
+- **🎚️ Sliders intuitifs** : Volume sonore et nombre de timers affichés avec contrôles glissants
+- **📏 Espacement harmonieux** : Labels et boutons parfaitement alignés et espacés
+- **🎮 UX améliorée** : Configuration plus intuitive et professionnelle
+
+### 🚀 Performance
+- **⚡ Alertes fiables** : Système unifié garantissant les notifications pour tous les timers
+- **🔄 Synchronisation robuste** : Alertes programmées même pour les timers reçus via sync
 
 ## [1.4.3] - 2025-01-27
 

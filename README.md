@@ -13,7 +13,7 @@ Quand tu lances `/legendaryspawn` dans une dimension, le mod enregistre automati
 Appuie sur **L** pour voir tous tes timers actifs avec le temps restant exact et la phase du jour prédite (Midi, Crépuscule, etc.).
 
 ### 🔔 Alertes intelligentes
-Reçois automatiquement une notification 1 minute avant chaque spawn avec un son d'enclume pour ne jamais rater un légendaire.
+Reçois automatiquement une notification 1 minute avant chaque spawn avec un son d'enclume pour ne jamais rater un légendaire. **Nouveau v1.4.5** : Les alertes fonctionnent maintenant pour tous les timers, même ceux synchronisés avec d'autres joueurs !
 
 ### 🕐 Prédiction des phases
 Le mod calcule automatiquement à quelle phase du jour le légendaire va spawn (Dawn, Noon, Night, etc.) pour t'aider à optimiser tes captures.
@@ -31,6 +31,13 @@ Appuie sur **K** pour accéder aux options :
 - **Affichage alerte** : Chat / Non  
 - **Son alerte** : Oui / Non
 - **Synchronisation** : Oui / Non
+- **🎵 Volume sonore** : Contrôle le volume du son d'enclume (0-100%)
+- **📊 Timers affichés** : Nombre de timers visibles dans l'interface (1-6)
+
+### 🎚️ Contrôles avancés
+- **Slider volume** : Ajuste le volume du son d'alerte avec un contrôle glissant
+- **Bouton Play** : Teste le son d'enclume à tout moment
+- **Slider timers** : Choisis combien de timers afficher (interface s'adapte automatiquement)
 
 ### Configuration instantanée
 Tous les changements s'appliquent immédiatement sans redémarrage !
@@ -76,13 +83,7 @@ Tous les changements s'appliquent immédiatement sans redémarrage !
 - **K** : Ouvrir la configuration
 - **Clic + Glisser** : Déplacer l'interface
 
-## 🆕 Nouveautés v1.4.5
-
-🐛 **Bug critique corrigé** : Les timers synchronisés déclenchent maintenant des alertes  
-🔔 **Alertes garanties** : Tous les timers (locaux et synchronisés) ont des alertes  
-🎯 **Fiabilité maximale** : Plus jamais de timer silencieux reçu par synchronisation  
-
-## 🚀 Nouveautés v1.4.3
+## 🆕 Nouveautés v1.4.3
 
 🚀 **Migration Cloudflare** : Architecture ultra-performante avec Workers + R2  
 ⚡ **Jar ultra-léger** : 170KB (réduction de 97%) sans dépendances lourdes  
