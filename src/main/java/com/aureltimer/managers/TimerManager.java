@@ -154,6 +154,9 @@ public class TimerManager {
                     if (!allTimers.containsKey(entry.getKey())) {
                         DimensionTimer dimTimer = new DimensionTimer(entry.getValue());
                         allTimers.put(entry.getKey(), dimTimer);
+                        
+                        // 🔧 CORRECTION BUG : Programmer une alerte pour les timers synchronisés
+                        scheduleAlertForSyncedTimer(entry.getKey(), dimTimer);
                     }
                 }
             } catch (Exception e) {
@@ -163,6 +166,38 @@ public class TimerManager {
         }
         
         return allTimers;
+    }
+    
+    /**
+     * 🔧 CORRECTION BUG : Programme une alerte pour un timer synchronisé
+     */
+    private void scheduleAlertForSyncedTimer(String dimensionName, DimensionTimer timer) {
+        try {
+            if (timer.isExpired()) {
+                return; // Timer déjà expiré
+            }
+            
+            // Calculer le délai jusqu'à 1 minute avant expiration
+            java.time.Duration remaining = java.time.Duration.between(
+                com.aureltimer.utils.TimeAuthority.getInstance().now(), 
+                timer.getExpiresAtUtc()
+            );
+            
+            long totalSeconds = remaining.getSeconds();
+            if (totalSeconds > 60) {
+                int delaySeconds = (int)(totalSeconds - 60);
+                
+                // Programmer l'alerte unique
+                boolean scheduled = com.aureltimer.utils.AlertScheduler.scheduleUniqueAlert(dimensionName, delaySeconds);
+                if (scheduled) {
+                    LOGGER.info("🔔 Alerte programmée pour timer synchronisé {} dans {}s", dimensionName, delaySeconds);
+                } else {
+                    LOGGER.debug("Alerte déjà programmée pour timer synchronisé {}", dimensionName);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Erreur lors de la programmation d'alerte pour timer synchronisé {}: {}", dimensionName, e.getMessage());
+        }
     }
     
     public DimensionTimer getTimer(String dimensionName) {

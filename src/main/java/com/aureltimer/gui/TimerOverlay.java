@@ -91,12 +91,13 @@ public class TimerOverlay {
         int screenWidth = client.getWindow().getScaledWidth();
         int screenHeight = client.getWindow().getScaledHeight();
         
-        // Position et taille de l'interface
+        // Position et taille de l'interface (adaptative selon le nombre de timers)
         int overlayWidth = 300;
-        int overlayHeight = 200;
+        ModConfig config = ModConfig.getInstance();
+        int maxDisplayed = config.getMaxDisplayedTimers();
+        int overlayHeight = 80 + (maxDisplayed * 25) + (maxDisplayed < 6 ? 20 : 0); // Hauteur adaptative
         
         // Utiliser position sauvegardée ou centrer par défaut
-        ModConfig config = ModConfig.getInstance();
         int x, y;
         if (config.getOverlayX() == -1 || config.getOverlayY() == -1) {
             // Position par défaut (centrée)
@@ -159,12 +160,24 @@ public class TimerOverlay {
             .sorted((t1, t2) -> Long.compare(t1.getSecondsRemaining(), t2.getSecondsRemaining()))
             .collect(Collectors.toList());
         
+        // Limiter le nombre de timers affichés selon la configuration
+        ModConfig config = ModConfig.getInstance();
+        int maxDisplayed = config.getMaxDisplayedTimers();
+        List<DimensionTimer> limitedTimers = sortedTimers.stream()
+            .limit(maxDisplayed)
+            .collect(Collectors.toList());
+        
         int currentY = y;
-        for (DimensionTimer timer : sortedTimers) {
-            if (currentY > y + 120) break; // Limiter le nombre de timers affichés
-            
+        for (DimensionTimer timer : limitedTimers) {
             renderTimer(context, timer, x, currentY, width);
             currentY += 25;
+        }
+        
+        // Afficher un indicateur s'il y a plus de timers
+        if (sortedTimers.size() > maxDisplayed) {
+            int hiddenCount = sortedTimers.size() - maxDisplayed;
+            Text moreText = Text.literal("... et " + hiddenCount + " autre(s)");
+            context.drawText(client.textRenderer, moreText, x + (width - client.textRenderer.getWidth(moreText)) / 2, currentY, TEXT_COLOR, true);
         }
     }
     

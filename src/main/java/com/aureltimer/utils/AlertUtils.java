@@ -19,11 +19,12 @@ public class AlertUtils {
         try {
             ModConfig config = ModConfig.getInstance();
             
-            // Jouer le son si activé
+            // Jouer le son si activé avec volume configuré
             if (config.shouldPlaySound()) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 if (client != null && client.player != null) {
-                    client.player.playSound(net.minecraft.sound.SoundEvents.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                    float volume = config.getNormalizedSoundVolume();
+                    client.player.playSound(net.minecraft.sound.SoundEvents.BLOCK_ANVIL_LAND, volume, 1.0f);
                 }
             }
             

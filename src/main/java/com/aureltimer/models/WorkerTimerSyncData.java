@@ -1,5 +1,7 @@
 package com.aureltimer.models;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -24,6 +26,40 @@ public class WorkerTimerSyncData {
     
     // ===== STATS =====
     public Stats stats = new Stats();
+    
+    // ETag pour cache
+    private String etag;
+    
+    // Gson instance
+    private static final Gson GSON = new GsonBuilder()
+        .setPrettyPrinting()
+        .create();
+    
+
+    
+    // Getters/Setters
+    public String getEtag() { return etag; }
+    public void setEtag(String etag) { this.etag = etag; }
+    
+    public Map<String, SyncTimer> getTimers() { return timers; }
+    
+    /**
+     * Parse JSON vers WorkerTimerSyncData
+     */
+    public static WorkerTimerSyncData fromJson(String json) {
+        try {
+            return GSON.fromJson(json, WorkerTimerSyncData.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Convertit vers JSON
+     */
+    public String toJson() {
+        return GSON.toJson(this);
+    }
     
     /**
      * ✅ TIMER INDIVIDUEL DANS LE JSON

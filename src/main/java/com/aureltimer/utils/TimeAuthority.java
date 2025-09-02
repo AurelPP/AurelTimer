@@ -60,6 +60,13 @@ public final class TimeAuthority {
      * 
      * @param dateHeader Header Date HTTP (ex: "Fri, 30 Aug 2025 11:30:15 GMT")
      */
+    /**
+     * Mise à jour depuis un header HTTP Date (méthode statique pour compatibilité)
+     */
+    public static void updateFromHttpDate(String dateHeader) {
+        INSTANCE.updateFromHttpDateHeader(dateHeader);
+    }
+    
     public void updateFromHttpDateHeader(String dateHeader) {
         if (dateHeader == null || dateHeader.trim().isEmpty()) {
             LOGGER.debug("⏰ Header Date vide - conservation du skew actuel: {}ms", skewMillis);

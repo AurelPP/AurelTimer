@@ -77,6 +77,10 @@ public class ModConfig {
     private int overlayX = -1;
     private int overlayY = -1;
     
+    // Nouveaux paramètres v1.4.4
+    private int soundVolume = 100; // Volume du son d'enclume (0-100%)
+    private int maxDisplayedTimers = 3; // Nombre de timers affichés (1-6)
+    
     // Instance singleton
     private static ModConfig instance;
     
@@ -108,6 +112,9 @@ public class ModConfig {
                         // Charger la position de l'interface (valeurs par défaut si non présentes)
                         this.overlayX = loadedConfig.overlayX;
                         this.overlayY = loadedConfig.overlayY;
+                        // Charger les nouveaux paramètres v1.4.4 (valeurs par défaut si non présentes)
+                        this.soundVolume = loadedConfig.soundVolume > 0 ? loadedConfig.soundVolume : 100;
+                        this.maxDisplayedTimers = loadedConfig.maxDisplayedTimers > 0 ? Math.min(6, Math.max(1, loadedConfig.maxDisplayedTimers)) : 3;
                         LOGGER.info("Configuration chargée depuis {}", configFile.getAbsolutePath());
                     }
                 }
@@ -232,5 +239,44 @@ public class ModConfig {
     
     public void setOverlayYTemporary(int y) {
         this.overlayY = y;
+    }
+    
+    // Getters et Setters pour les nouveaux paramètres v1.4.4
+    
+    /**
+     * Obtient le volume du son d'enclume (0-100%)
+     */
+    public int getSoundVolume() {
+        return soundVolume;
+    }
+    
+    /**
+     * Définit le volume du son d'enclume (0-100%)
+     */
+    public void setSoundVolume(int soundVolume) {
+        this.soundVolume = Math.max(0, Math.min(100, soundVolume));
+        saveConfig();
+    }
+    
+    /**
+     * Obtient le nombre maximum de timers affichés (1-6)
+     */
+    public int getMaxDisplayedTimers() {
+        return maxDisplayedTimers;
+    }
+    
+    /**
+     * Définit le nombre maximum de timers affichés (1-6)
+     */
+    public void setMaxDisplayedTimers(int maxDisplayedTimers) {
+        this.maxDisplayedTimers = Math.max(1, Math.min(6, maxDisplayedTimers));
+        saveConfig();
+    }
+    
+    /**
+     * Obtient le volume normalisé pour Minecraft (0.0-1.0)
+     */
+    public float getNormalizedSoundVolume() {
+        return soundVolume / 100.0f;
     }
 }

@@ -17,6 +17,10 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 public class AurelTimerMod implements ClientModInitializer {
 
     public static final String MOD_ID = "aurel-timer";
@@ -27,6 +31,11 @@ public class AurelTimerMod implements ClientModInitializer {
     private static TimerManager timerManager;
     private static TimerOverlay timerOverlay;
     private static WhitelistManager whitelistManager;
+    
+    // Délai de grâce pour éviter les arrêts prématurés (Velocity proxy)
+    private static ScheduledExecutorService disconnectGraceExecutor;
+    private static volatile boolean isDisconnectScheduled = false;
+    private static volatile boolean isConnectionGracePeriod = false;
 
     @Override
     public void onInitializeClient() {
@@ -34,6 +43,13 @@ public class AurelTimerMod implements ClientModInitializer {
 
         // Initialiser la configuration
         ModConfig.getInstance();
+
+        // Initialiser l'executor pour le délai de grâce
+        disconnectGraceExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "AurelTimer-DisconnectGrace");
+            t.setDaemon(true);
+            return t;
+        });
 
         // Initialiser le système de whitelist
         whitelistManager = new WhitelistManager();
@@ -79,18 +95,49 @@ public class AurelTimerMod implements ClientModInitializer {
         // Synchronisation lors de la connexion au serveur
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             LOGGER.info("Connexion au serveur détectée - synchronisation des timers...");
+            
+            // Annuler toute déconnexion en cours (transition Velocity → serveur final)
+            if (isDisconnectScheduled) {
+                LOGGER.info("🔄 Reconnexion détectée - annulation de l'arrêt prévu");
+                isDisconnectScheduled = false;
+            }
+            
+            // Période de grâce après connexion (5 secondes)
+            isConnectionGracePeriod = true;
+            disconnectGraceExecutor.schedule(() -> {
+                isConnectionGracePeriod = false;
+                LOGGER.info("✅ Période de grâce après connexion terminée");
+            }, 5, TimeUnit.SECONDS);
+            
             if (timerManager != null && timerManager.isSyncEnabled()) {
                 // La sync se fera automatiquement avec le nouveau système
                 LOGGER.info("✅ Sync automatique activée pour la connexion serveur");
             }
         });
 
-        // ✅ ARRÊT PROPRE lors de la déconnexion
+        // ✅ ARRÊT PROPRE avec délai de grâce pour Velocity
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            LOGGER.info("🛑 Déconnexion détectée - arrêt propre des managers");
-            if (timerManager != null) {
-                timerManager.close();
+            // Ignorer les déconnexions pendant la période de grâce après connexion
+            if (isConnectionGracePeriod) {
+                LOGGER.info("🔄 Déconnexion ignorée - période de grâce après connexion active");
+                return;
             }
+            
+            LOGGER.info("🛑 Déconnexion détectée - délai de grâce de 30 secondes...");
+            
+            // Programmer l'arrêt avec délai de grâce
+            isDisconnectScheduled = true;
+            disconnectGraceExecutor.schedule(() -> {
+                if (isDisconnectScheduled) {
+                    LOGGER.info("🛑 Délai de grâce écoulé - arrêt propre des managers");
+                    if (timerManager != null) {
+                        timerManager.close();
+                    }
+                    isDisconnectScheduled = false;
+                } else {
+                    LOGGER.info("✅ Arrêt annulé - reconnexion détectée");
+                }
+            }, 30, TimeUnit.SECONDS);
         });
 
         LOGGER.info("Aurel Timer Mod initialisé avec succès !");
@@ -115,5 +162,26 @@ public class AurelTimerMod implements ClientModInitializer {
 
     public static WhitelistManager getWhitelistManager() {
         return whitelistManager;
+    }
+    
+    /**
+     * Arrêt propre du mod (appelé lors de la fermeture du jeu)
+     */
+    public static void shutdown() {
+        if (disconnectGraceExecutor != null && !disconnectGraceExecutor.isShutdown()) {
+            disconnectGraceExecutor.shutdown();
+            try {
+                if (!disconnectGraceExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    disconnectGraceExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                disconnectGraceExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        if (timerManager != null) {
+            timerManager.close();
+        }
     }
 }

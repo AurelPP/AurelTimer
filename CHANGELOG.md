@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.5] - 2025-01-28
+
+### 🐛 Corrections
+- **Bug critique corrigé** : Les timers synchronisés déclenchent maintenant des alertes
+- **Problème identifié** : Les timers reçus par synchronisation n'activaient pas le système d'alerte
+- **Solution implémentée** : Programmation automatique d'alerte pour tous les timers synchronisés
+- **Comportement uniforme** : Alertes garanties 1 minute avant expiration pour tous les timers
+
 ## [1.4.3] - 2025-01-27
 
 ### 🚀 Migration Cloudflare Workers + R2

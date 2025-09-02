@@ -76,7 +76,13 @@ Tous les changements s'appliquent immédiatement sans redémarrage !
 - **K** : Ouvrir la configuration
 - **Clic + Glisser** : Déplacer l'interface
 
-## 🆕 Nouveautés v1.4.3
+## 🆕 Nouveautés v1.4.5
+
+🐛 **Bug critique corrigé** : Les timers synchronisés déclenchent maintenant des alertes  
+🔔 **Alertes garanties** : Tous les timers (locaux et synchronisés) ont des alertes  
+🎯 **Fiabilité maximale** : Plus jamais de timer silencieux reçu par synchronisation  
+
+## 🚀 Nouveautés v1.4.3
 
 🚀 **Migration Cloudflare** : Architecture ultra-performante avec Workers + R2  
 ⚡ **Jar ultra-léger** : 170KB (réduction de 97%) sans dépendances lourdes  
