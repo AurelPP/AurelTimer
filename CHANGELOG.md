@@ -5,6 +5,25 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.6] - 2025-01-27
+
+### 🚨 Corrections Critiques
+- **🔄 Reconnexion automatique** : Le mod se relance automatiquement après une déconnexion/reconnexion
+- **⚡ Synchronisation réparée** : Les timers synchronisés s'affichent maintenant correctement en jeu
+- **🛡️ Protection anti-crash** : Plus d'erreurs NullPointerException qui cassent le système
+- **🔔 Alertes précises** : Les alertes se déclenchent au bon moment (temps restant, pas durée initiale)
+
+### 🐛 Corrections de Bugs
+- **📥 Notification manquante** : Les timers du serveur sont maintenant notifiés au système local
+- **⏰ Calcul d'alerte** : Correction du calcul du temps restant pour les alertes synchronisées
+- **🔄 Relance intelligente** : Détection correcte de l'état fermé du TimerManager
+- **🛠️ Gestion d'erreurs** : Protection renforcée contre les ETag manquants
+
+### 🎯 Améliorations Stabilité
+- **🔧 Auto-réparation** : Le système se remet automatiquement en marche après les problèmes
+- **📊 Logs améliorés** : Messages plus clairs pour diagnostiquer les problèmes
+- **⚙️ Architecture robuste** : Gestion d'état plus fiable et prévisible
+
 ## [1.4.5] - 2025-01-27
 
 ### 🐛 Corrections Critiques

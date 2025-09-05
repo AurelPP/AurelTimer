@@ -86,9 +86,11 @@ public class CloudflareClient {
      */
     public GetResult getTimers(String etag, String opId) {
         if (isCircuitBreakerOpen(readCircuitBreakerUntil.get())) {
-            LOGGER.warn("🔴 Circuit breaker lecture ouvert - skip GET");
+            LOGGER.warn("🔴 Circuit breaker lecture ouvert - skip GET [{}]", opId);
             return new GetResult(null, null, false);
         }
+        
+        LOGGER.debug("🔍 Tentative GET timers... [{}]", opId);
         
         try {
             URL url = new URL(CloudflareConfig.WORKER_TIMERS_URL);
@@ -142,9 +144,12 @@ public class CloudflareClient {
             handleHttpError("GET", responseCode, conn);
             readFailures.incrementAndGet();
             
+            LOGGER.warn("❌ GET échoué - Code: {}, Échecs: {}/{} [{}]", 
+                       responseCode, readFailures.get(), MAX_FAILURES, opId);
+            
             if (readFailures.get() >= MAX_FAILURES) {
                 openCircuitBreaker(readCircuitBreakerUntil);
-                LOGGER.warn("🔴 Circuit breaker lecture ouvert après {} échecs", MAX_FAILURES);
+                LOGGER.warn("🔴 Circuit breaker lecture ouvert après {} échecs [{}]", MAX_FAILURES, opId);
             }
             
         } catch (Exception e) {

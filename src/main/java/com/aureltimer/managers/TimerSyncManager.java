@@ -41,6 +41,9 @@ public class TimerSyncManager implements AutoCloseable {
     // Actor pattern
     private final Actor syncActor;
     
+    // Référence au TimerManager pour notifications
+    private TimerManager timerManager;
+    
     // État atomique
     private final AtomicReference<WorkerTimerSyncData> currentData;
     private final AtomicReference<String> currentETag;
@@ -148,10 +151,24 @@ public class TimerSyncManager implements AutoCloseable {
     }
     
     /**
+     * Définir la référence au TimerManager pour les notifications
+     */
+    public void setTimerManager(TimerManager timerManager) {
+        this.timerManager = timerManager;
+    }
+    
+    /**
      * Vérifie si la synchronisation est activée
      */
     public boolean getSyncEnabled() {
         return syncEnabled;
+    }
+    
+    /**
+     * Vérifie si le TimerSyncManager est fermé
+     */
+    public boolean isShutdown() {
+        return shutdown;
     }
     
     /**
@@ -237,12 +254,17 @@ public class TimerSyncManager implements AutoCloseable {
             CloudflareClient.PostResult postResult = cloudflareClient.postTimers(jsonToUpload, currentETagValue, opId + "-POST");
             
             if (postResult.isSuccess()) {
-                LOGGER.info("✅ POST Worker réussi - ETag: {} [{}]", postResult.getEtag(), opId);
+                String newETag = postResult.getEtag();
+                LOGGER.info("✅ POST Worker réussi - ETag: {} [{}]", newETag, opId);
                 
-                // 4. Sanity check après 3s
-                syncActor.schedule(() -> {
-                    performSanityCheck(postResult.getEtag(), opId + "-SANITY");
-                }, SANITY_CHECK_DELAY);
+                // 4. Sanity check après 3s (seulement si ETag disponible)
+                if (newETag != null && !newETag.isEmpty()) {
+                    syncActor.schedule(() -> {
+                        performSanityCheck(newETag, opId + "-SANITY");
+                    }, SANITY_CHECK_DELAY);
+                } else {
+                    LOGGER.warn("⚠️ POST réussi mais ETag manquant - pas de sanity check [{}]", opId);
+                }
                 
             } else if (postResult.isPreconditionFailed()) {
                 LOGGER.warn("⚠️ POST Worker - conflit 412, relance revalidation [{}]", opId);
@@ -265,7 +287,11 @@ public class TimerSyncManager implements AutoCloseable {
         
         inFlightGet = true;
         try {
+            LOGGER.debug("🔍 Appel cloudflareClient.getTimers... [{}]", opId);
             CloudflareClient.GetResult result = cloudflareClient.getTimers(ifNoneMatchETag, opId);
+            
+            LOGGER.debug("🔍 Résultat GET: success={}, newContent={}, notModified={} [{}]", 
+                        result.isSuccess(), result.isNewContent(), result.isNotModified(), opId);
             
             if (result.isSuccess() && result.isNewContent()) {
                 LOGGER.info("📥 Nouvelles données Worker reçues [{}]", opId);
@@ -295,25 +321,60 @@ public class TimerSyncManager implements AutoCloseable {
         currentData.set(remoteData);
         currentETag.set(newETag);
         
+        // CRUCIAL: Notifier le TimerManager des nouveaux timers
+        notifyTimerManagerOfSync(remoteData, opId);
+        
         LOGGER.info("✅ Merge terminé - {} timers, ETag: {} [{}]", 
                    remoteData.timers.size(), 
                    newETag.substring(0, Math.min(8, newETag.length())) + "...",
                    opId);
     }
     
+    private void notifyTimerManagerOfSync(WorkerTimerSyncData remoteData, String opId) {
+        LOGGER.debug("📢 Notification TimerManager des timers synchronisés... [{}]", opId);
+        
+        // Convertir chaque timer distant en TimerData local
+        for (Map.Entry<String, WorkerTimerSyncData.SyncTimer> entry : remoteData.timers.entrySet()) {
+            try {
+                String dimensionName = entry.getKey();
+                WorkerTimerSyncData.SyncTimer syncTimer = entry.getValue();
+                TimerData timerData = syncTimer.toTimerData(dimensionName);
+                if (timerData != null) {
+                    // Notifier le TimerManager via l'événement sync
+                    if (timerManager != null) {
+                        timerManager.onTimerSyncReceived(timerData, opId + "-SYNC");
+                    } else {
+                        LOGGER.warn("⚠️ TimerManager non défini - notification sync ignorée [{}]", opId);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warn("⚠️ Erreur conversion timer sync: {} [{}]", e.getMessage(), opId);
+            }
+        }
+    }
+    
     private void performSanityCheck(String expectedETag, String opId) {
         LOGGER.debug("🔍 Sanity check... [{}]", opId);
+        
+        // Protection contre ETag null
+        if (expectedETag == null || expectedETag.isEmpty()) {
+            LOGGER.warn("⚠️ Sanity check annulé - ETag attendu manquant [{}]", opId);
+            return;
+        }
         
         CloudflareClient.GetResult result = cloudflareClient.getTimers(null, opId);
         
         if (result.isSuccess()) {
             String actualETag = result.getEtag();
-            if (expectedETag.equals(actualETag)) {
+            if (actualETag != null && expectedETag.equals(actualETag)) {
                 LOGGER.info("✅ Sanity check OK - propagation confirmée [{}]", opId);
+            } else if (actualETag == null) {
+                LOGGER.warn("⚠️ Sanity check: ETag actuel manquant (expected={}) [{}]", 
+                           expectedETag.substring(0, Math.min(8, expectedETag.length())) + "...", opId);
             } else {
                 LOGGER.warn("⚠️ Sanity check: ETag différent (expected={}, actual={}) [{}]", 
-                           expectedETag.substring(0, 8) + "...", 
-                           actualETag.substring(0, 8) + "...", opId);
+                           expectedETag.substring(0, Math.min(8, expectedETag.length())) + "...", 
+                           actualETag.substring(0, Math.min(8, actualETag.length())) + "...", opId);
             }
         } else {
             LOGGER.warn("⚠️ Sanity check échoué: {} [{}]", result.getErrorMessage(), opId);

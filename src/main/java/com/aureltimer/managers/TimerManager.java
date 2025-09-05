@@ -3,6 +3,7 @@ package com.aureltimer.managers;
 import com.aureltimer.models.DimensionTimer;
 import com.aureltimer.models.TimerData;
 import com.aureltimer.utils.TimeAuthority;
+import com.aureltimer.utils.AlertScheduler;
 import net.minecraft.client.MinecraftClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ public class TimerManager {
     
     public TimerManager() {
         this.syncManager = new TimerSyncManager();
+        this.syncManager.setTimerManager(this);
     }
     
     public void updateTimer(String dimensionName, int minutes, int seconds) {
@@ -212,6 +214,13 @@ public class TimerManager {
         return syncManager.getSyncEnabled();
     }
     
+    /**
+     * Vérifie si le TimerManager est fermé
+     */
+    public boolean isShutdown() {
+        return syncManager.isShutdown();
+    }
+    
     public void setSyncEnabled(boolean enabled) {
         syncManager.setSyncEnabled(enabled);
     }
@@ -221,6 +230,31 @@ public class TimerManager {
      */
     public String getDebugMetrics() {
         return syncManager.getDebugMetrics();
+    }
+    
+    /**
+     * 📥 Réception d'un timer synchronisé depuis le serveur
+     */
+    public void onTimerSyncReceived(TimerData timerData, String opId) {
+        LOGGER.info("📥 Timer sync reçu: {} [{}]", timerData.getDimensionName(), opId);
+        
+        // Créer ou mettre à jour le timer local
+        DimensionTimer timer = new DimensionTimer(timerData);
+        dimensionTimers.put(timerData.getDimensionName(), timer);
+        
+        // Calculer le temps restant pour l'alerte
+        long remainingSeconds = timerData.getSecondsRemaining();
+        int minutes = (int) (remainingSeconds / 60);
+        int seconds = (int) (remainingSeconds % 60);
+        
+        // Programmer l'alerte avec le temps restant (en secondes)
+        int delaySeconds = (int) remainingSeconds - 60; // Alerte 1 minute avant
+        if (delaySeconds > 0) {
+            AlertScheduler.scheduleUniqueAlert(timerData.getDimensionName(), delaySeconds);
+        }
+        
+        LOGGER.info("✅ Timer sync appliqué: {} - {} minutes et {} secondes [{}]", 
+                   timerData.getDimensionName(), minutes, seconds, opId);
     }
     
     /**

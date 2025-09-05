@@ -109,6 +109,16 @@ public class AurelTimerMod implements ClientModInitializer {
                 LOGGER.info("✅ Période de grâce après connexion terminée");
             }, 5, TimeUnit.SECONDS);
             
+            // 🔄 RELANCER le TimerManager si fermé
+            if (timerManager == null || timerManager.isShutdown()) {
+                LOGGER.info("🔄 Relance du TimerManager...");
+                timerManager = new TimerManager();
+                timerOverlay = new TimerOverlay(timerManager, whitelistManager);
+                ChatHandler.setTimerManager(timerManager);
+                timerManager.setSyncEnabled(ModConfig.getInstance().shouldSyncTimers());
+                LOGGER.info("✅ TimerManager relancé avec succès");
+            }
+            
             if (timerManager != null && timerManager.isSyncEnabled()) {
                 // La sync se fera automatiquement avec le nouveau système
                 LOGGER.info("✅ Sync automatique activée pour la connexion serveur");

@@ -105,9 +105,12 @@ public class ConfigScreen extends Screen {
         this.playSoundButton = this.addDrawableChild(ButtonWidget.builder(
             Text.literal("▶"), 
             (button) -> {
-                if (client != null && client.player != null && config.shouldPlaySound()) {
+                if (client != null && client.player != null) {
                     float volume = config.getNormalizedSoundVolume();
                     client.player.playSound(SoundEvents.BLOCK_ANVIL_LAND, volume, 1.0f);
+                    LOGGER.info("🔊 Test son joué avec volume: {}%", config.getSoundVolume());
+                } else {
+                    LOGGER.warn("❌ Impossible de jouer le son: client ou player null");
                 }
             }).dimensions(centerX + 60, startY + 150, 40, 20).build());
         
