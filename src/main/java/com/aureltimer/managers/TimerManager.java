@@ -78,20 +78,20 @@ public class TimerManager {
             // Ignorer silencieusement si pas trouvé
         }
         
-        // Programmer l'alerte pour TOUS les timers (chat ET sync)
+        // Programmer l'alerte pour les timers locaux (pas ceux de la sync)
         try {
             int totalSeconds = minutes * 60 + seconds;
             if (totalSeconds > 60) {
                 int delaySeconds = totalSeconds - 60;
                 boolean alertScheduled = com.aureltimer.utils.AlertScheduler.scheduleUniqueAlert(dimensionName, delaySeconds);
                 if (alertScheduled) {
-                    LOGGER.info("🔔 Alerte programmée pour {} dans {}s", dimensionName, delaySeconds);
+                    LOGGER.info("🔔 Alerte locale programmée pour {} dans {}s", dimensionName, delaySeconds);
                 } else {
                     LOGGER.debug("🔔 Alerte déjà programmée pour {}", dimensionName);
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Erreur lors de la programmation d'alerte: {}", e.getMessage());
+            LOGGER.error("Erreur lors de la programmation d'alerte locale: {}", e.getMessage());
         }
         
         // Synchroniser avec les autres utilisateurs si activé

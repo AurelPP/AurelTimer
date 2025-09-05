@@ -56,6 +56,17 @@ public class TimerOverlay {
         return (alpha << 24) | 0x000000; // Noir avec transparence
     }
     
+    /**
+     * Obtient une couleur avec transparence appliquée
+     */
+    private int getColorWithTransparency(int baseColor) {
+        float transparency = ModConfig.getInstance().getNormalizedTransparency();
+        // S'assurer que l'alpha est dans la plage valide [0, 255]
+        int alpha = Math.max(0, Math.min(255, (int) (transparency * 0xFF)));
+        return (alpha << 24) | (baseColor & 0x00FFFFFF); // Couleur avec transparence
+    }
+    
+    
     public TimerOverlay(TimerManager timerManager, WhitelistManager whitelistManager) {
         this.timerManager = timerManager;
         this.whitelistManager = whitelistManager;
@@ -123,30 +134,37 @@ public class TimerOverlay {
         context.fill(x, y, x + overlayWidth, y + overlayHeight, getBackgroundColor());
         
         // Bordure (différente couleur si en train de déplacer)
-        int borderColor = isDragging ? 0xFFFFFFFF : BORDER_COLOR; // Blanc si drag, vert sinon
+        int borderColor = isDragging ? getColorWithTransparency(0xFFFFFFFF) : getColorWithTransparency(BORDER_COLOR); // Blanc si drag, vert sinon
         context.fill(x, y, x + overlayWidth, y + 2, borderColor); // Bordure supérieure
         context.fill(x, y, x + 2, y + overlayHeight, borderColor); // Bordure gauche
         context.fill(x + overlayWidth - 2, y, x + overlayWidth, y + overlayHeight, borderColor); // Bordure droite
         context.fill(x, y + overlayHeight - 2, x + overlayWidth, y + overlayHeight, borderColor); // Bordure inférieure
         
-        // Titre
-        Text title = Text.literal("⏰ Timers Légendaires");
-        int titleWidth = client.textRenderer.getWidth(title);
-        context.drawText(client.textRenderer, title, x + (overlayWidth - titleWidth) / 2, y + 10, TITLE_COLOR, true);
+        // Vérifier si l'opacité est trop faible pour afficher le texte
+        boolean shouldHideText = ModConfig.getInstance().getInterfaceTransparency() <= 1;
         
-        // Récupérer la vraie hotkey pour fermer l'interface
-        String closeKey = getCloseKeyName();
-        
-        // Instructions
-        Text instructions = Text.literal("Appuie sur " + closeKey + " pour fermer");
-        int instructionsWidth = client.textRenderer.getWidth(instructions);
-        context.drawText(client.textRenderer, instructions, x + (overlayWidth - instructionsWidth) / 2, y + 25, TEXT_COLOR, true);
+        if (!shouldHideText) {
+            // Titre
+            Text title = Text.literal("Timers Légendaires");
+            int titleWidth = client.textRenderer.getWidth(title);
+            context.drawText(client.textRenderer, title, x + (overlayWidth - titleWidth) / 2, y + 10, getColorWithTransparency(TITLE_COLOR), true);
+            
+            // Récupérer la vraie hotkey pour fermer l'interface
+            String closeKey = getCloseKeyName();
+            
+            // Instructions
+            Text instructions = Text.literal("Appuie sur " + closeKey + " pour fermer");
+            int instructionsWidth = client.textRenderer.getWidth(instructions);
+            context.drawText(client.textRenderer, instructions, x + (overlayWidth - instructionsWidth) / 2, y + 25, getColorWithTransparency(TEXT_COLOR), true);
+        }
         
         // Séparateur
-        context.fill(x + 20, y + 45, x + overlayWidth - 20, y + 47, BORDER_COLOR);
+        context.fill(x + 20, y + 45, x + overlayWidth - 20, y + 47, getColorWithTransparency(BORDER_COLOR));
         
-        // Liste des timers
-        renderTimers(context, x + 20, y + 60, overlayWidth - 40);
+        // Liste des timers (seulement si l'opacité est suffisante)
+        if (!shouldHideText) {
+            renderTimers(context, x + 20, y + 60, overlayWidth - 40);
+        }
     }
     
     private void renderTimers(DrawContext context, int x, int y, int width) {
@@ -158,10 +176,10 @@ public class TimerOverlay {
         
         if (timers.isEmpty()) {
             Text noTimers = Text.literal("Aucun timer actif");
-            context.drawText(client.textRenderer, noTimers, x + (width - client.textRenderer.getWidth(noTimers)) / 2, y, TEXT_COLOR, true);
+            context.drawText(client.textRenderer, noTimers, x + (width - client.textRenderer.getWidth(noTimers)) / 2, y, getColorWithTransparency(TEXT_COLOR), true);
             
             Text instruction = Text.literal("Utilise /legendaryspawn dans chaque dimension");
-            context.drawText(client.textRenderer, instruction, x + (width - client.textRenderer.getWidth(instruction)) / 2, y + 20, TEXT_COLOR, true);
+            context.drawText(client.textRenderer, instruction, x + (width - client.textRenderer.getWidth(instruction)) / 2, y + 20, getColorWithTransparency(TEXT_COLOR), true);
             return;
         }
         
@@ -187,7 +205,7 @@ public class TimerOverlay {
         if (sortedTimers.size() > maxDisplayed) {
             int hiddenCount = sortedTimers.size() - maxDisplayed;
             Text moreText = Text.literal("... et " + hiddenCount + " autre(s)");
-            context.drawText(client.textRenderer, moreText, x + (width - client.textRenderer.getWidth(moreText)) / 2, currentY, TEXT_COLOR, true);
+            context.drawText(client.textRenderer, moreText, x + (width - client.textRenderer.getWidth(moreText)) / 2, currentY, getColorWithTransparency(TEXT_COLOR), true);
         }
     }
     
@@ -197,24 +215,31 @@ public class TimerOverlay {
         
         // Nom de la dimension avec phase prédite colorée
         String phaseDisplay = TimeUtils.getPhaseDisplay(timer.getPredictedPhase());
-        String coloredPhase = PhaseColorUtils.colorizeText(phaseDisplay, timer.getPredictedPhase());
-        Text dimensionText = Text.literal("🌍 " + timer.getDimensionName() + " - " + coloredPhase);
-        context.drawText(client.textRenderer, dimensionText, x, y, TITLE_COLOR, true);
+        String dimensionName = timer.getDimensionName() + " - " + phaseDisplay;
+        
+        // Appliquer la couleur de phase au nom de dimension si activé
+        if (ModConfig.getInstance().isPhaseColorsEnabled()) {
+            // Utiliser Text.formatted() pour les couleurs de phase
+            Text dimensionText = Text.literal(timer.getDimensionName() + " - ")
+                .append(Text.literal(phaseDisplay).formatted(PhaseColorUtils.getPhaseColor(timer.getPredictedPhase())));
+            context.drawText(client.textRenderer, dimensionText, x, y, getColorWithTransparency(TITLE_COLOR), true);
+        } else {
+            context.drawText(client.textRenderer, dimensionName, x, y, getColorWithTransparency(TITLE_COLOR), true);
+        }
         
         // Timer avec couleur de phase
         String timeText = timer.getFormattedTimeRemaining();
-        int timeColor = timer.isExpired() ? EXPIRED_COLOR : TIMER_COLOR;
         
         // Appliquer la couleur de phase au temps si activé
         if (ModConfig.getInstance().isPhaseColorsEnabled() && !timer.isExpired()) {
-            String coloredTime = PhaseColorUtils.colorizeText(timeText, timer.getPredictedPhase());
-            Text timerText = Text.literal(coloredTime);
+            // Utiliser Text.formatted() pour les couleurs de phase
+            Text timerText = Text.literal(timeText).formatted(PhaseColorUtils.getPhaseColor(timer.getPredictedPhase()));
             int timerWidth = client.textRenderer.getWidth(timerText);
-            context.drawText(client.textRenderer, timerText, x + width - timerWidth, y, timeColor, true);
+            context.drawText(client.textRenderer, timerText, x + width - timerWidth, y, getColorWithTransparency(TIMER_COLOR), true);
         } else {
-            Text timerText = Text.literal(timeText);
-            int timerWidth = client.textRenderer.getWidth(timerText);
-            context.drawText(client.textRenderer, timerText, x + width - timerWidth, y, timeColor, true);
+            int timeColor = timer.isExpired() ? getColorWithTransparency(EXPIRED_COLOR) : getColorWithTransparency(TIMER_COLOR);
+            int timerWidth = client.textRenderer.getWidth(timeText);
+            context.drawText(client.textRenderer, timeText, x + width - timerWidth, y, timeColor, true);
         }
         
         // Barre de progression
@@ -234,12 +259,12 @@ public class TimerOverlay {
         float progress = (float) remainingSeconds / totalSeconds;
         int progressWidth = (int) (width * progress);
         
-        // Barre de fond
-        context.fill(x, y, x + width, y + barHeight, 0x44FFFFFF);
+        // Barre de fond (gris foncé, plus clair que le fond de l'interface)
+        context.fill(x, y, x + width, y + barHeight, getColorWithTransparency(0x66888888));
         
         // Barre de progression
         int progressColor = progress > 0.5f ? 0xFF4CAF50 : progress > 0.2f ? 0xFFFF9800 : 0xFFFF4444;
-        context.fill(x, y, x + progressWidth, y + barHeight, progressColor);
+        context.fill(x, y, x + progressWidth, y + barHeight, getColorWithTransparency(progressColor));
     }
     
     /**

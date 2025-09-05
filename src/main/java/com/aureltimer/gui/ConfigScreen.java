@@ -77,18 +77,11 @@ public class ConfigScreen extends Screen {
             Text.literal("Son alerte: " + config.getSoundEnabled().toString()), 
             (button) -> {
                 cycleSoundEnabled();
-            }).dimensions(centerX - 100, startY + 50, 200, 20).build());
-        
-        // Bouton pour la synchronisation
-        this.syncEnabledButton = this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("Synchronisation: " + config.getSyncEnabled().toString()), 
-            (button) -> {
-                cycleSyncEnabled();
-            }).dimensions(centerX - 100, startY + 100, 200, 20).build());
+            }).dimensions(centerX - 100, startY + 30, 200, 20).build());
         
         // Slider pour le volume du son
         this.soundVolumeSlider = this.addDrawableChild(new SliderWidget(
-            centerX - 100, startY + 150, 150, 20,
+            centerX - 100, startY + 60, 150, 20,
             Text.literal("Volume son: " + config.getSoundVolume() + "%"),
             config.getSoundVolume() / 100.0) {
             @Override
@@ -114,11 +107,18 @@ public class ConfigScreen extends Screen {
                 } else {
                     LOGGER.warn("❌ Impossible de jouer le son: client ou player null");
                 }
-            }).dimensions(centerX + 60, startY + 150, 40, 20).build());
+            }).dimensions(centerX + 60, startY + 60, 40, 20).build());
+        
+        // Bouton pour la synchronisation
+        this.syncEnabledButton = this.addDrawableChild(ButtonWidget.builder(
+            Text.literal("Synchronisation: " + config.getSyncEnabled().toString()), 
+            (button) -> {
+                cycleSyncEnabled();
+            }).dimensions(centerX - 100, startY + 90, 200, 20).build());
         
         // Slider pour le nombre de timers affichés
         this.maxDisplayedTimersSlider = this.addDrawableChild(new SliderWidget(
-            centerX - 100, startY + 200, 200, 20,
+            centerX - 100, startY + 120, 200, 20,
             Text.literal("Timers affichés: " + config.getMaxDisplayedTimers()),
             (config.getMaxDisplayedTimers() - 1) / 5.0) {
             @Override
@@ -140,30 +140,35 @@ public class ConfigScreen extends Screen {
             (button) -> {
                 config.setPhaseColorsEnabled(!config.isPhaseColorsEnabled());
                 phaseColorsButton.setMessage(Text.literal("Couleurs phase: " + (config.isPhaseColorsEnabled() ? "Oui" : "Non")));
-            }).dimensions(centerX - 100, startY + 250, 200, 20).build());
+            }).dimensions(centerX - 100, startY + 150, 200, 20).build());
         
-        // Slider pour la transparence de l'interface
+        // Slider pour l'opacité de l'interface
         this.transparencySlider = this.addDrawableChild(new SliderWidget(
-            centerX - 100, startY + 300, 200, 20,
-            Text.literal("Transparence: " + config.getInterfaceTransparency() + "%"),
+            centerX - 100, startY + 180, 200, 20,
+            Text.literal("Opacité: " + config.getInterfaceTransparency() + "%"),
             config.getInterfaceTransparency() / 100.0) {
             @Override
             protected void updateMessage() {
                 int value = (int)(this.value * 100);
-                setMessage(Text.literal("Transparence: " + value + "%"));
+                setMessage(Text.literal("Opacité: " + value + "%"));
             }
             
             @Override
             protected void applyValue() {
                 int newValue = (int)(this.value * 100);
                 config.setInterfaceTransparency(newValue);
+                
+                // Afficher l'interface des timers pour voir l'opacité en temps réel
+                if (AurelTimerMod.getTimerOverlay() != null) {
+                    AurelTimerMod.getTimerOverlay().setVisible(true);
+                }
             }
         });
         
         // Bouton Terminé
         this.doneButton = this.addDrawableChild(ButtonWidget.builder(Text.literal("Terminé"), (button) -> {
             this.client.setScreen(this.parent);
-        }).dimensions(centerX - 50, startY + 350, 100, 20).build());
+        }).dimensions(centerX - 50, startY + 220, 100, 20).build());
     }
     
     private void cycleAlertDisplay() {
@@ -262,18 +267,11 @@ public class ConfigScreen extends Screen {
             // Titre rendu en dernier pour être visible
             context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
             
-            // Labels des options (avec espacement réduit)
+            // Description des options (position ajustée)
             int startY = 80;
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Affichage alerte:"), this.width / 2 - 100, startY - 15, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Son alerte:"), this.width / 2 - 100, startY + 35, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Synchronisation:"), this.width / 2 - 100, startY + 85, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Volume son:"), this.width / 2 - 100, startY + 135, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Timers affichés:"), this.width / 2 - 100, startY + 185, 0xFFFFFF);
-            
-            // Description des options
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Chat: Affiche l'alerte dans le chat"), this.width / 2 - 100, startY + 290, 0xAAAAAA);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Volume: Contrôle le volume du son d'enclume (bouton ▶ pour tester)"), this.width / 2 - 100, startY + 305, 0xAAAAAA);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Timers: Nombre de timers visibles (1-6)"), this.width / 2 - 100, startY + 320, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Chat: Affiche l'alerte dans le chat"), this.width / 2 - 100, startY + 250, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Volume: Contrôle le volume du son d'enclume (bouton ▶ pour tester)"), this.width / 2 - 100, startY + 265, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, Text.literal("Timers: Nombre de timers visibles (1-6)"), this.width / 2 - 100, startY + 280, 0xAAAAAA);
         }
     }
     

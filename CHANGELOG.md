@@ -9,21 +9,29 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### 🎨 Nouvelles Fonctionnalités
 - **🌈 Couleurs de phase** : Les timers affichent maintenant des couleurs selon la phase du jour (aube, midi, crépuscule, nuit, etc.)
-- **👁️ Transparence d'interface** : Contrôle de la transparence du fond de l'interface pour moins gêner la vision en jeu
+- **👁️ Opacité d'interface** : Contrôle de l'opacité de l'interface pour moins gêner la vision en jeu
 - **🎛️ Configuration étendue** : Nouveaux contrôles dans l'écran de configuration (K) pour personnaliser l'apparence
 
 ### 🎯 Améliorations Visuelles
-- **🌅 Aube** : Couleur jaune (&6) pour les timers d'aube
-- **🌞 Midi** : Couleur gris clair (&7) pour les timers de midi  
-- **🌆 Crépuscule** : Couleur violette (&5) pour les timers de crépuscule
-- **🌙 Nuit** : Couleur bleu foncé (&9) pour les timers de nuit
-- **🌃 Minuit** : Couleur bleu très foncé (&1) pour les timers de minuit
-- **🔧 Transparence ajustable** : De 0% (invisible) à 100% (opaque) selon tes préférences
+- **🌅 Aube** : Couleur dorée pour les timers d'aube
+- **🌞 Midi** : Couleur grise pour les timers de midi  
+- **🌆 Crépuscule** : Couleur violette pour les timers de crépuscule
+- **🌙 Nuit** : Couleur bleue pour les timers de nuit
+- **🌃 Minuit** : Couleur bleu foncé pour les timers de minuit
+- **🔧 Opacité ajustable** : De 0% (invisible) à 100% (opaque) selon tes préférences
+- **📊 Barres de progression** : Couleur gris foncé harmonieuse pour les barres vides
 
 ### ⚙️ Personnalisation
 - **🎨 Couleurs activables/désactivables** : Option pour revenir aux couleurs par défaut
-- **👀 Vision optimisée** : Interface moins intrusive grâce à la transparence
+- **👀 Vision optimisée** : Interface moins intrusive grâce à l'opacité
 - **🎮 UX améliorée** : Configuration plus intuitive avec sliders et boutons
+- **⚡ Ajustement en temps réel** : L'interface des timers s'affiche pendant le réglage de l'opacité
+
+### 🐛 Corrections
+- **🔔 Alertes uniques** : Plus d'alertes dupliquées dans le chat
+- **📝 Interface épurée** : Suppression des émojis pour un affichage plus propre
+- **🎯 Opacité parfaite** : Le texte disparaît correctement à 0-1% d'opacité
+- **⚙️ Ordre logique** : Configuration réorganisée (Son alerte → Volume son → Synchronisation)
 
 ## [1.4.6] - 2025-01-27
 

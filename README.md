@@ -13,13 +13,13 @@ Quand tu lances `/legendaryspawn` dans une dimension, le mod enregistre automati
 Appuie sur **L** pour voir tous tes timers actifs avec le temps restant exact et la phase du jour prédite (Midi, Crépuscule, etc.).
 
 ### 🔔 Alertes intelligentes
-Reçois automatiquement une notification 1 minute avant chaque spawn avec un son d'enclume pour ne jamais rater un légendaire. **Nouveau v1.4.7** : Couleurs de phase et transparence personnalisables !
+Reçois automatiquement une notification 1 minute avant chaque spawn avec un son d'enclume pour ne jamais rater un légendaire. **Nouveau v1.4.7** : Couleurs de phase et opacité personnalisables !
 
 ### 🕐 Prédiction des phases
 Le mod calcule automatiquement à quelle phase du jour le légendaire va spawn (Dawn, Noon, Night, etc.) pour t'aider à optimiser tes captures.
 
 ### 🌐 Synchronisation automatique
-Tous les timers se partagent entre les joueurs du mod ! Si quelqu'un crée un timer, tu le vois automatiquement. **Nouveau v1.4.7** : Interface colorée et transparente pour une meilleure visibilité !
+Tous les timers se partagent entre les joueurs du mod ! Si quelqu'un crée un timer, tu le vois automatiquement. **Nouveau v1.4.7** : Interface colorée et opacité ajustable pour une meilleure visibilité !
 
 ### 🖱️ Interface déplaçable
 Clique et glisse le titre de l'interface pour la positionner où tu veux. La position est sauvegardée !
@@ -100,7 +100,7 @@ Tous les changements s'appliquent immédiatement sans redémarrage !
 🔄 **Sync à la connexion** : Récupération automatique des timers  
 🐛 **Corrections importantes** : Fini les bugs de barres de progression et le spam d'alertes  
 🚀 **v1.4.6** : Reconnexion automatique, synchronisation réparée, alertes précises  
-🎨 **v1.4.7** : Couleurs de phase, transparence d'interface, personnalisation avancée
+🎨 **v1.4.7** : Couleurs de phase, opacité d'interface, personnalisation avancée
 
 ## 📝 Historique
 
