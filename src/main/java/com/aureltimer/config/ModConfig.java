@@ -81,6 +81,10 @@ public class ModConfig {
     private int soundVolume = 100; // Volume du son d'enclume (0-100%)
     private int maxDisplayedTimers = 3; // Nombre de timers affichés (1-6)
     
+    // Nouveaux paramètres v1.4.7
+    private boolean phaseColorsEnabled = true; // Couleurs selon la phase du jour
+    private int interfaceTransparency = 100; // Transparence de l'interface (0-100%)
+    
     // Instance singleton
     private static ModConfig instance;
     
@@ -115,6 +119,9 @@ public class ModConfig {
                         // Charger les nouveaux paramètres v1.4.4 (valeurs par défaut si non présentes)
                         this.soundVolume = loadedConfig.soundVolume > 0 ? loadedConfig.soundVolume : 100;
                         this.maxDisplayedTimers = loadedConfig.maxDisplayedTimers > 0 ? Math.min(6, Math.max(1, loadedConfig.maxDisplayedTimers)) : 3;
+                        // Charger les nouveaux paramètres v1.4.7 (valeurs par défaut si non présentes)
+                        this.phaseColorsEnabled = loadedConfig.phaseColorsEnabled;
+                        this.interfaceTransparency = loadedConfig.interfaceTransparency > 0 ? Math.min(100, Math.max(0, loadedConfig.interfaceTransparency)) : 100;
                         LOGGER.info("Configuration chargée depuis {}", configFile.getAbsolutePath());
                     }
                 }
@@ -278,5 +285,44 @@ public class ModConfig {
      */
     public float getNormalizedSoundVolume() {
         return soundVolume / 100.0f;
+    }
+    
+    // Getters et Setters pour les nouveaux paramètres v1.4.7
+    
+    /**
+     * Vérifie si les couleurs de phase sont activées
+     */
+    public boolean isPhaseColorsEnabled() {
+        return phaseColorsEnabled;
+    }
+    
+    /**
+     * Active/désactive les couleurs de phase
+     */
+    public void setPhaseColorsEnabled(boolean phaseColorsEnabled) {
+        this.phaseColorsEnabled = phaseColorsEnabled;
+        saveConfig();
+    }
+    
+    /**
+     * Obtient la transparence de l'interface (0-100%)
+     */
+    public int getInterfaceTransparency() {
+        return interfaceTransparency;
+    }
+    
+    /**
+     * Définit la transparence de l'interface (0-100%)
+     */
+    public void setInterfaceTransparency(int interfaceTransparency) {
+        this.interfaceTransparency = Math.max(0, Math.min(100, interfaceTransparency));
+        saveConfig();
+    }
+    
+    /**
+     * Obtient la transparence normalisée pour Minecraft (0.0-1.0)
+     */
+    public float getNormalizedTransparency() {
+        return interfaceTransparency / 100.0f;
     }
 }

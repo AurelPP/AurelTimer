@@ -26,6 +26,8 @@ public class ConfigScreen extends Screen {
     private SliderWidget soundVolumeSlider;
     private ButtonWidget playSoundButton;
     private SliderWidget maxDisplayedTimersSlider;
+    private ButtonWidget phaseColorsButton;
+    private SliderWidget transparencySlider;
     private ButtonWidget doneButton;
     
     public ConfigScreen(Screen parent) {
@@ -132,10 +134,36 @@ public class ConfigScreen extends Screen {
             }
         });
         
+        // Bouton pour les couleurs de phase
+        this.phaseColorsButton = this.addDrawableChild(ButtonWidget.builder(
+            Text.literal("Couleurs phase: " + (config.isPhaseColorsEnabled() ? "Oui" : "Non")), 
+            (button) -> {
+                config.setPhaseColorsEnabled(!config.isPhaseColorsEnabled());
+                phaseColorsButton.setMessage(Text.literal("Couleurs phase: " + (config.isPhaseColorsEnabled() ? "Oui" : "Non")));
+            }).dimensions(centerX - 100, startY + 250, 200, 20).build());
+        
+        // Slider pour la transparence de l'interface
+        this.transparencySlider = this.addDrawableChild(new SliderWidget(
+            centerX - 100, startY + 300, 200, 20,
+            Text.literal("Transparence: " + config.getInterfaceTransparency() + "%"),
+            config.getInterfaceTransparency() / 100.0) {
+            @Override
+            protected void updateMessage() {
+                int value = (int)(this.value * 100);
+                setMessage(Text.literal("Transparence: " + value + "%"));
+            }
+            
+            @Override
+            protected void applyValue() {
+                int newValue = (int)(this.value * 100);
+                config.setInterfaceTransparency(newValue);
+            }
+        });
+        
         // Bouton Terminé
         this.doneButton = this.addDrawableChild(ButtonWidget.builder(Text.literal("Terminé"), (button) -> {
             this.client.setScreen(this.parent);
-        }).dimensions(centerX - 50, startY + 250, 100, 20).build());
+        }).dimensions(centerX - 50, startY + 350, 100, 20).build());
     }
     
     private void cycleAlertDisplay() {

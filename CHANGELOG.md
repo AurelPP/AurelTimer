@@ -5,6 +5,26 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.4.7] - 2025-01-27
+
+### 🎨 Nouvelles Fonctionnalités
+- **🌈 Couleurs de phase** : Les timers affichent maintenant des couleurs selon la phase du jour (aube, midi, crépuscule, nuit, etc.)
+- **👁️ Transparence d'interface** : Contrôle de la transparence du fond de l'interface pour moins gêner la vision en jeu
+- **🎛️ Configuration étendue** : Nouveaux contrôles dans l'écran de configuration (K) pour personnaliser l'apparence
+
+### 🎯 Améliorations Visuelles
+- **🌅 Aube** : Couleur jaune (&6) pour les timers d'aube
+- **🌞 Midi** : Couleur gris clair (&7) pour les timers de midi  
+- **🌆 Crépuscule** : Couleur violette (&5) pour les timers de crépuscule
+- **🌙 Nuit** : Couleur bleu foncé (&9) pour les timers de nuit
+- **🌃 Minuit** : Couleur bleu très foncé (&1) pour les timers de minuit
+- **🔧 Transparence ajustable** : De 0% (invisible) à 100% (opaque) selon tes préférences
+
+### ⚙️ Personnalisation
+- **🎨 Couleurs activables/désactivables** : Option pour revenir aux couleurs par défaut
+- **👀 Vision optimisée** : Interface moins intrusive grâce à la transparence
+- **🎮 UX améliorée** : Configuration plus intuitive avec sliders et boutons
+
 ## [1.4.6] - 2025-01-27
 
 ### 🚨 Corrections Critiques

@@ -4,6 +4,8 @@ import com.aureltimer.managers.TimerManager;
 import com.aureltimer.managers.WhitelistManager;
 import com.aureltimer.models.DimensionTimer;
 import com.aureltimer.config.ModConfig;
+import com.aureltimer.utils.PhaseColorUtils;
+import com.aureltimer.utils.TimeUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -38,13 +40,21 @@ public class TimerOverlay {
     private int dragOffsetY = 0;
     
     // Couleurs et style
-    private static final int BACKGROUND_COLOR = 0x88000000; // Noir semi-transparent
     private static final int BORDER_COLOR = 0xFF4CAF50; // Vert
     private static final int TITLE_COLOR = 0xFFFFFFFF; // Blanc
     private static final int TEXT_COLOR = 0xFFCCCCCC; // Gris clair
     private static final int TIMER_COLOR = 0xFFFFFF00; // Jaune
     private static final int EXPIRED_COLOR = 0xFFFF4444; // Rouge
     private static final int ERROR_COLOR = 0xFFFF5555; // Rouge d'erreur
+    
+    /**
+     * Obtient la couleur de fond avec transparence configurée
+     */
+    private int getBackgroundColor() {
+        float transparency = ModConfig.getInstance().getNormalizedTransparency();
+        int alpha = (int) (transparency * 0x88); // Base 0x88 (136) avec facteur de transparence
+        return (alpha << 24) | 0x000000; // Noir avec transparence
+    }
     
     public TimerOverlay(TimerManager timerManager, WhitelistManager whitelistManager) {
         this.timerManager = timerManager;
@@ -109,8 +119,8 @@ public class TimerOverlay {
             y = Math.max(0, Math.min(config.getOverlayY(), screenHeight - overlayHeight));
         }
         
-        // Fond principal
-        context.fill(x, y, x + overlayWidth, y + overlayHeight, BACKGROUND_COLOR);
+        // Fond principal avec transparence configurée
+        context.fill(x, y, x + overlayWidth, y + overlayHeight, getBackgroundColor());
         
         // Bordure (différente couleur si en train de déplacer)
         int borderColor = isDragging ? 0xFFFFFFFF : BORDER_COLOR; // Blanc si drag, vert sinon
@@ -185,17 +195,27 @@ public class TimerOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return;
         
-        // Nom de la dimension avec phase prédite
-        Text dimensionText = Text.literal("🌍 " + timer.getDimensionNameWithPhase());
+        // Nom de la dimension avec phase prédite colorée
+        String phaseDisplay = TimeUtils.getPhaseDisplay(timer.getPredictedPhase());
+        String coloredPhase = PhaseColorUtils.colorizeText(phaseDisplay, timer.getPredictedPhase());
+        Text dimensionText = Text.literal("🌍 " + timer.getDimensionName() + " - " + coloredPhase);
         context.drawText(client.textRenderer, dimensionText, x, y, TITLE_COLOR, true);
         
-        // Timer
+        // Timer avec couleur de phase
         String timeText = timer.getFormattedTimeRemaining();
         int timeColor = timer.isExpired() ? EXPIRED_COLOR : TIMER_COLOR;
-        Text timerText = Text.literal(timeText);
         
-        int timerWidth = client.textRenderer.getWidth(timerText);
-        context.drawText(client.textRenderer, timerText, x + width - timerWidth, y, timeColor, true);
+        // Appliquer la couleur de phase au temps si activé
+        if (ModConfig.getInstance().isPhaseColorsEnabled() && !timer.isExpired()) {
+            String coloredTime = PhaseColorUtils.colorizeText(timeText, timer.getPredictedPhase());
+            Text timerText = Text.literal(coloredTime);
+            int timerWidth = client.textRenderer.getWidth(timerText);
+            context.drawText(client.textRenderer, timerText, x + width - timerWidth, y, timeColor, true);
+        } else {
+            Text timerText = Text.literal(timeText);
+            int timerWidth = client.textRenderer.getWidth(timerText);
+            context.drawText(client.textRenderer, timerText, x + width - timerWidth, y, timeColor, true);
+        }
         
         // Barre de progression
         if (!timer.isExpired()) {
