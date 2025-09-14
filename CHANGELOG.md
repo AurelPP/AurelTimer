@@ -5,7 +5,7 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.4.7] - 2025-01-27
+## [1.4.7] - 2025-09-06
 
 ### 🎨 Nouvelles Fonctionnalités
 - **🌈 Couleurs de phase** : Les timers affichent maintenant des couleurs selon la phase du jour (aube, midi, crépuscule, nuit, etc.)
@@ -33,7 +33,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **🎯 Opacité parfaite** : Le texte disparaît correctement à 0-1% d'opacité
 - **⚙️ Ordre logique** : Configuration réorganisée (Son alerte → Volume son → Synchronisation)
 
-## [1.4.6] - 2025-01-27
+## [1.4.6] - 2025-09-06
 
 ### 🚨 Corrections Critiques
 - **🔄 Reconnexion automatique** : Le mod se relance automatiquement après une déconnexion/reconnexion
@@ -52,7 +52,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **📊 Logs améliorés** : Messages plus clairs pour diagnostiquer les problèmes
 - **⚙️ Architecture robuste** : Gestion d'état plus fiable et prévisible
 
-## [1.4.5] - 2025-01-27
+## [1.4.5] - 2025-09-03
 
 ### 🐛 Corrections Critiques
 - **🔔 Alertes unifiées** : Correction majeure - les timers synchronisés déclenchent maintenant les alertes
@@ -69,7 +69,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **⚡ Alertes fiables** : Système unifié garantissant les notifications pour tous les timers
 - **🔄 Synchronisation robuste** : Alertes programmées même pour les timers reçus via sync
 
-## [1.4.3] - 2025-01-27
+## [1.4.3] - 2025-09-01
 
 ### 🚀 Migration Cloudflare Workers + R2
 - **Nouvelle architecture** : Migration complète de GitHub Gist vers Cloudflare Workers + R2

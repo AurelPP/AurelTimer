@@ -78,7 +78,14 @@ public final class TimerData {
     public long getSecondsRemaining() {
         Instant now = timeAuthority.now();
         Duration remaining = Duration.between(now, expiresAtUtc);
-        return Math.max(0, remaining.getSeconds());
+        
+        // Si le timer est expiré, retourner 0
+        if (remaining.isNegative() || remaining.isZero()) {
+            return 0;
+        }
+        
+        // Sinon, retourner le temps restant réel
+        return remaining.getSeconds();
     }
     
     /**
